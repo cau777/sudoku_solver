@@ -1,0 +1,1 @@
+pub type Array2D<T, const TSIZE: usize> = [[T; TSIZE]; TSIZE];
