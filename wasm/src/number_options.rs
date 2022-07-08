@@ -1,55 +1,61 @@
 use std::fmt::{Debug, Formatter};
-use std::ops::{BitAnd, BitOr, Not};
+use std::ops::{BitOr, Not};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct NumberOptions {
-    numbers: [bool; 9],
+    data: u16,
 }
 
 impl NumberOptions {
-    pub fn has_number(&mut self, num: u8) -> bool {
-        self.numbers[(num as usize) - 1]
-    }
-
-    pub fn set_number(&mut self, num: u8, state: bool) {
-        self.numbers[(num as usize) - 1] = state
+    pub fn has_number(&self, num: u8) -> bool {
+        (self.data >> (num - 1)) & 1 == 1
     }
 
     pub fn add_number(&mut self, num: u8) {
-        self.set_number(num, true)
+        self.data |= 1 << (num - 1);
     }
 
     pub fn remove_number(&mut self, num: u8) {
-        self.set_number(num, false)
+        self.data &= !(1 << (num - 1));
     }
 
     pub fn all(&self) -> bool {
-        self.numbers.iter().all(|x| *x)
+        self.data == 0b11_1111_1111
     }
 
-    pub fn count(&self) -> u8 {
-        let mut result = 0_u8;
-        for value in self.numbers {
-            result += value as u8;
+    pub fn count(&self) -> u16 {
+        let mut result = 0_u16;
+        for value in 0..9_u8 {
+            result += (self.data >> value) & 1;
         }
         result
     }
 
     pub fn first(&self) -> Option<u8> {
-        for (index, value) in self.numbers.into_iter().enumerate() {
-            if value {
-                return Some((index + 1) as u8);
+        for i in 1..=9_u8 {
+            if self.has_number(i) {
+                return Some(i);
             }
         }
+
         None
     }
 
     pub fn as_vec(&self) -> Vec<u8> {
         let mut result = Vec::<u8>::with_capacity(9);
-        for (index, value) in self.numbers.into_iter().enumerate() {
-            if value {
-                result.push((index + 1) as u8);
+
+        for i in 1..=9_u8 {
+            if self.has_number(i) {
+                result.push(i)
             }
+        }
+        result
+    }
+
+    pub fn as_bool_array(&self) -> [bool; 9] {
+        let mut result = [false; 9];
+        for i in 0..9 {
+            result[i] = self.has_number(i as u8 + 1);
         }
         result
     }
@@ -58,7 +64,7 @@ impl NumberOptions {
 impl Default for NumberOptions {
     fn default() -> Self {
         NumberOptions {
-            numbers: [false; 9]
+            data: 0
         }
     }
 }
@@ -68,35 +74,7 @@ impl BitOr for NumberOptions {
 
     fn bitor(self, rhs: Self) -> Self::Output {
         NumberOptions {
-            numbers: [
-                self.numbers[0] || rhs.numbers[0],
-                self.numbers[1] || rhs.numbers[1],
-                self.numbers[2] || rhs.numbers[2],
-                self.numbers[3] || rhs.numbers[3],
-                self.numbers[4] || rhs.numbers[4],
-                self.numbers[5] || rhs.numbers[5],
-                self.numbers[6] || rhs.numbers[6],
-                self.numbers[7] || rhs.numbers[7],
-                self.numbers[8] || rhs.numbers[8]]
-        }
-    }
-}
-
-impl BitAnd for NumberOptions {
-    type Output = NumberOptions;
-
-    fn bitand(self, rhs: Self) -> Self::Output {
-        NumberOptions {
-            numbers: [
-                self.numbers[0] && rhs.numbers[0],
-                self.numbers[1] && rhs.numbers[1],
-                self.numbers[2] && rhs.numbers[2],
-                self.numbers[3] && rhs.numbers[3],
-                self.numbers[4] && rhs.numbers[4],
-                self.numbers[5] && rhs.numbers[5],
-                self.numbers[6] && rhs.numbers[6],
-                self.numbers[7] && rhs.numbers[7],
-                self.numbers[8] && rhs.numbers[8]]
+            data: self.data | rhs.data
         }
     }
 }
@@ -106,7 +84,7 @@ impl Not for NumberOptions {
 
     fn not(self) -> Self::Output {
         NumberOptions {
-            numbers: self.numbers.map(|x| !x)
+            data: !self.data
         }
     }
 }
@@ -115,7 +93,7 @@ impl Debug for NumberOptions {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "[ ")?;
 
-        for (index, value) in self.numbers.iter().enumerate() {
+        for (index, value) in self.as_bool_array().iter().enumerate() {
             if *value {
                 write!(f, "{} ", index + 1)?;
             }
@@ -124,5 +102,24 @@ impl Debug for NumberOptions {
         write!(f, "]")?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::number_options::NumberOptions;
+
+    #[test]
+    fn util() {
+        let mut options = NumberOptions::default();
+        println!("{:?}", options);
+
+        options.add_number(1);
+        options.add_number(9);
+        println!("{:?}", options);
+
+        options.remove_number(9);
+        options.remove_number(2);
+        println!("{:?}", options);
     }
 }
