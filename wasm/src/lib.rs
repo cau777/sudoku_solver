@@ -1,7 +1,8 @@
-mod sudoku_board;
+pub mod sudoku_board;
+pub mod sudoku_examples;
+pub mod sudoku_solver;
 mod number_options;
 mod util;
-mod sudoku_solver;
 
 use wasm_bindgen::prelude::*;
 
