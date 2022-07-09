@@ -1,8 +1,33 @@
 use std::fmt::{Debug, Formatter};
+use std::hash::{Hash};
 use crate::number_options::{NumberOptions};
 use crate::util::Array2D;
 
-#[derive(Clone)]
+#[derive(Clone, Hash, Eq, PartialEq)]
+pub struct SudokuNumbers {
+    numbers: [i8; 9 * 9],
+}
+
+impl SudokuNumbers {
+    pub fn from_board(board: &SudokuBoard) -> Self {
+        let mut result = SudokuNumbers { numbers: [-1; 9 * 9] };
+        let mut i = 0;
+
+        for row in 0..9 {
+            for col in 0..9 {
+                let num = board.get_number(row, col);
+                if num.is_some() {
+                    result.numbers[i] = num.unwrap() as i8;
+                }
+                i += 1;
+            }
+        }
+
+        result
+    }
+}
+
+#[derive(Clone, Eq, PartialEq)]
 pub struct SudokuBoard {
     numbers: Array2D<Option<u8>, 9>,
     rows: [NumberOptions; 9],
@@ -64,6 +89,7 @@ impl SudokuBoard {
         board
     }
 
+    #[inline]
     pub fn is_full(&self) -> bool {
         for row in self.numbers.iter() {
             for &e in row {
@@ -72,7 +98,6 @@ impl SudokuBoard {
                 }
             }
         }
-
         true
     }
 
@@ -96,23 +121,6 @@ impl SudokuBoard {
 impl Debug for SudokuBoard {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.board_to_string())?;
-        // writeln!(f, "Rows")?;
-        // for (index, value) in self.rows.iter().enumerate() {
-        //     writeln!(f, "{} {:?}", index, value)?;
-        // }
-        //
-        // writeln!(f, "Cols")?;
-        // for (index, value) in self.cols.iter().enumerate() {
-        //     writeln!(f, "{} {:?}", index, value)?;
-        // }
-        //
-        // writeln!(f, "Blocks")?;
-        // for row in 0..3_usize {
-        //     for col in 0..3_usize {
-        //         writeln!(f, "{},{} {:?}", row, col, self.blocks[row][col])?;
-        //     }
-        // }
-
         Ok(())
     }
 }

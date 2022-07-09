@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Formatter};
-use std::ops::{BitOr, Not};
+use std::ops::{BitAnd, BitOr, BitOrAssign, Not};
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub struct NumberOptions {
     data: u16,
 }
@@ -22,6 +22,8 @@ impl NumberOptions {
     pub fn all(&self) -> bool {
         self.data == 0b11_1111_1111
     }
+
+    pub fn empty(&self) -> bool { self.data == 0 }
 
     pub fn count(&self) -> u16 {
         let mut result = 0_u16;
@@ -75,6 +77,22 @@ impl BitOr for NumberOptions {
     fn bitor(self, rhs: Self) -> Self::Output {
         NumberOptions {
             data: self.data | rhs.data
+        }
+    }
+}
+
+impl BitOrAssign for NumberOptions {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.data |= rhs.data;
+    }
+}
+
+impl BitAnd for NumberOptions {
+    type Output = NumberOptions;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        NumberOptions {
+            data: self.data & rhs.data
         }
     }
 }

@@ -44,7 +44,7 @@ pub const MEDIUM_LITERALS: [&str; 1] = [
     _ _ _ _ _ _ _ _ 9",
 ];
 
-pub const HARD_LITERALS: [&str; 1] = [
+pub const HARD_LITERALS: [&str; 2] = [
     "
     _ _ _ _ _ _ _ _ _
     _ _ _ _ _ 3 _ 8 5
@@ -55,4 +55,13 @@ pub const HARD_LITERALS: [&str; 1] = [
     5 _ _ _ _ _ _ 7 3
     _ _ 2 _ 1 _ _ _ _
     _ _ _ _ 4 _ _ _ 9",
+    "
+    1 _ _ _ _ 7 _ 9 _
+    _ 3 _ _ 2 _ _ _ 8
+    _ _ 9 6 _ _ 5 _ _
+    _ 1 _ _ 8 _ _ _ 2
+    6 _ _ _ _ 4 _ _ _
+    3 _ _ _ _ _ _ 1 _
+    _ 4 _ _ _ _ _ _ 7
+    _ _ 7 _ _ _ 3 _ _",
 ];
