@@ -72,7 +72,7 @@ impl SudokuBoard {
         !(self.rows[row] | self.cols[col] | self.blocks[row / 3][col / 3])
     }
 
-    pub fn from_literal(literal: &'static str) -> SudokuBoard {
+    pub fn from_literal(literal: &str) -> SudokuBoard {
         let mut board = SudokuBoard::new();
         let mut board_index = 0;
 

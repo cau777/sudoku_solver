@@ -1,22 +1,15 @@
-use std::collections::{HashSet, LinkedList};
+use std::collections::{LinkedList};
 use crate::number_options::NumberOptions;
-use crate::sudoku_board::{SudokuBoard, SudokuNumbers};
+use crate::sudoku_board::{SudokuBoard};
 use crate::util::Array2D;
 
 pub fn solve(board: &SudokuBoard) -> Option<SudokuBoard> {
     let mut stack = LinkedList::<SudokuBoard>::new();
-    let mut set = HashSet::<SudokuNumbers>::new();
 
     stack.push_front(board.clone());
 
     while !stack.is_empty() {
         let mut current = stack.pop_front().unwrap();
-
-        let numbers = SudokuNumbers::from_board(&current);
-        // if set.contains(&numbers) {
-        //     continue;
-        // }
-        // set.insert(numbers);
 
         while develop(&mut current) {}
 
@@ -160,7 +153,7 @@ fn develop(board: &mut SudokuBoard) -> bool {
     if sole_candidates(board, &possibilities)
     || unique_candidates_lines::<false>(board, &possibilities)
     || unique_candidates_lines::<true>(board, &possibilities)
-    // || unique_candidates_blocks(board, &possibilities)
+    || unique_candidates_blocks(board, &possibilities)
     {
         return true;
     }
@@ -196,6 +189,8 @@ fn find_next_to_try(board: &SudokuBoard) -> Option<[usize; 2]> {
 
 #[cfg(test)]
 mod tests {
+    use std::fs::OpenOptions;
+    use std::io::{BufRead, BufReader};
     use crate::sudoku_board::SudokuBoard;
     use crate::sudoku_examples::{EASY_LITERALS, HARD_LITERALS, MEDIUM_LITERALS};
     use crate::sudoku_solver::{develop, generate_possibilities, solve, unique_candidates_lines};
@@ -241,7 +236,7 @@ mod tests {
     }
 
     #[test]
-    fn unique_candidates_lines_col() {
+    fn unique_candidates_lines_test() {
         let examples: [&str; 1] = [
             "
             _ _ _ _ _ _ _ 9 _
@@ -256,12 +251,32 @@ mod tests {
             "
         ];
 
-        for example in examples {
-            let mut board = SudokuBoard::from_literal(example);
-
-            let possibilities = generate_possibilities(&board);
-            let result = unique_candidates_lines::<true>(&mut board, &possibilities);
+        for mut example in examples.map(SudokuBoard::from_literal){
+            let possibilities = generate_possibilities(&example);
+            let result = unique_candidates_lines::<true>(&mut example, &possibilities);
             assert!(result);
+        }
+    }
+
+    #[test]
+    fn file_4000() {
+        let file = OpenOptions::new()
+            .read(true)
+            .open("./test_data/tests_4000.csv").unwrap(); // Subset from https://www.kaggle.com/datasets/bryanpark/sudoku?resource=download
+
+        let reader = BufReader::new(file);
+
+        for line in reader.lines() {
+            let line = line.unwrap();
+            let v: Vec<String> = line.split(',').map(String::from).collect();
+
+            let input = SudokuBoard::from_literal(&v[0]);
+            let expected = SudokuBoard::from_literal(&v[1]);
+
+            let result = solve(&input);
+
+            assert!(result.is_some());
+            assert_eq!(result.unwrap(), expected);
         }
     }
 }
