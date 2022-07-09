@@ -3,8 +3,11 @@ use crate::number_options::NumberOptions;
 use crate::sudoku_board::{SudokuBoard};
 use crate::util::Array2D;
 
-pub fn solve(board: &SudokuBoard) -> Option<SudokuBoard> {
-    let mut stack = LinkedList::<SudokuBoard>::new();
+type Possibilities<const SIZE: usize> = Array2D<NumberOptions, SIZE>;
+
+pub fn solve<const SIZE: usize, const BLOCK_SIZE: usize>(board: &SudokuBoard<SIZE, BLOCK_SIZE>)
+                                                         -> Option<SudokuBoard<SIZE, BLOCK_SIZE>> {
+    let mut stack = LinkedList::<SudokuBoard<SIZE, BLOCK_SIZE>>::new();
 
     stack.push_front(board.clone());
 
@@ -34,9 +37,10 @@ pub fn solve(board: &SudokuBoard) -> Option<SudokuBoard> {
     None
 }
 
-fn sole_candidates(board: &mut SudokuBoard, possibilities: &Array2D<NumberOptions, 9>) -> bool {
-    for row in 0..9_usize {
-        for col in 0..9_usize {
+fn sole_candidates<const SIZE: usize, const BLOCK_SIZE: usize>(
+    board: &mut SudokuBoard<SIZE, BLOCK_SIZE>, possibilities: &Array2D<NumberOptions, SIZE>) -> bool {
+    for row in 0..SIZE {
+        for col in 0..SIZE {
             if board.get_number(row, col).is_some() { continue; }
 
             let possible = possibilities[row][col];
@@ -50,12 +54,13 @@ fn sole_candidates(board: &mut SudokuBoard, possibilities: &Array2D<NumberOption
     false
 }
 
-fn unique_candidates_lines<const INVERT: bool>(board: &mut SudokuBoard, possibilities: &Array2D<NumberOptions, 9>) -> bool {
-    for i in 0..9_usize {
+fn unique_candidates_lines<const INVERT: bool, const SIZE: usize, const BLOCK_SIZE: usize>(
+    board: &mut SudokuBoard<SIZE, BLOCK_SIZE>, possibilities: &Possibilities<SIZE>) -> bool {
+    for i in 0..SIZE {
         let mut at_least_one = NumberOptions::default();
         let mut more_than_one = NumberOptions::default();
 
-        for j in 0..9_usize {
+        for j in 0..SIZE {
             let row = if INVERT { j } else { i };
             let col = if INVERT { i } else { j };
 
@@ -74,7 +79,7 @@ fn unique_candidates_lines<const INVERT: bool>(board: &mut SudokuBoard, possibil
             // println!("{:?}", more_than_one);
             let first = unique.as_vec()[0];
 
-            for j in 0..9_usize {
+            for j in 0..SIZE {
                 let row = if INVERT { j } else { i };
                 let col = if INVERT { i } else { j };
 
@@ -90,17 +95,18 @@ fn unique_candidates_lines<const INVERT: bool>(board: &mut SudokuBoard, possibil
     false
 }
 
-fn unique_candidates_blocks(board: &mut SudokuBoard, possibilities: &Array2D<NumberOptions, 9>) -> bool {
-    for block_row in 0..3_usize {
-        for block_col in 0..3_usize {
+fn unique_candidates_blocks<const SIZE: usize, const BLOCK_SIZE: usize>(
+    board: &mut SudokuBoard<SIZE, BLOCK_SIZE>, possibilities: &Possibilities<SIZE>) -> bool {
+    for block_row in 0..BLOCK_SIZE {
+        for block_col in 0..BLOCK_SIZE {
             let mut at_least_one = NumberOptions::default();
             let mut more_than_one = NumberOptions::default();
 
-            let block_offset_row = block_row * 3;
-            let block_offset_col = block_col * 3;
+            let block_offset_row = block_row * BLOCK_SIZE;
+            let block_offset_col = block_col * BLOCK_SIZE;
 
-            for i in 0..3_usize {
-                for j in 0..3_usize {
+            for i in 0..BLOCK_SIZE {
+                for j in 0..BLOCK_SIZE {
                     let row = block_offset_row + i;
                     let col = block_offset_col + j;
 
@@ -116,8 +122,8 @@ fn unique_candidates_blocks(board: &mut SudokuBoard, possibilities: &Array2D<Num
             if unique.count() != 0 {
                 let first = unique.as_vec()[0];
 
-                for i in 0..3_usize {
-                    for j in 0..3_usize {
+                for i in 0..BLOCK_SIZE {
+                    for j in 0..BLOCK_SIZE {
                         let row = block_offset_row + i;
                         let col = block_offset_col + j;
 
@@ -135,11 +141,11 @@ fn unique_candidates_blocks(board: &mut SudokuBoard, possibilities: &Array2D<Num
     false
 }
 
-fn generate_possibilities(board: &SudokuBoard) -> Array2D<NumberOptions, 9> {
-    let mut result = [[NumberOptions::default(); 9]; 9];
+fn generate_possibilities<const SIZE: usize, const BLOCK_SIZE: usize>(board: &SudokuBoard<SIZE, BLOCK_SIZE>) -> Possibilities<SIZE> {
+    let mut result = [[NumberOptions::default(); SIZE]; SIZE];
 
-    for row in 0..9_usize {
-        for col in 0..9_usize {
+    for row in 0..SIZE {
+        for col in 0..SIZE {
             result[row][col] = board.get_possibilities(row, col);
         }
     }
@@ -147,13 +153,13 @@ fn generate_possibilities(board: &SudokuBoard) -> Array2D<NumberOptions, 9> {
     result
 }
 
-fn develop(board: &mut SudokuBoard) -> bool {
+fn develop<const SIZE: usize, const BLOCK_SIZE: usize>(board: &mut SudokuBoard<SIZE, BLOCK_SIZE>) -> bool {
     let possibilities = generate_possibilities(board);
 
     if sole_candidates(board, &possibilities)
-    || unique_candidates_lines::<false>(board, &possibilities)
-    || unique_candidates_lines::<true>(board, &possibilities)
-    || unique_candidates_blocks(board, &possibilities)
+        || unique_candidates_lines::<false, SIZE, BLOCK_SIZE>(board, &possibilities)
+        || unique_candidates_lines::<true, SIZE, BLOCK_SIZE>(board, &possibilities)
+        || unique_candidates_blocks(board, &possibilities)
     {
         return true;
     }
@@ -161,11 +167,11 @@ fn develop(board: &mut SudokuBoard) -> bool {
     false
 }
 
-fn find_next_to_try(board: &SudokuBoard) -> Option<[usize; 2]> {
-    let mut results: [Option<[usize; 2]>; 9] = [None; 9];
+fn find_next_to_try<const SIZE: usize, const BLOCK_SIZE: usize>(board: &SudokuBoard<SIZE, BLOCK_SIZE>) -> Option<[usize; 2]> {
+    let mut results: [Option<[usize; 2]>; SIZE] = [None; SIZE];
 
-    for row in 0..9_usize {
-        for col in 0..9_usize {
+    for row in 0..SIZE {
+        for col in 0..SIZE {
             if board.get_number(row, col).is_some() {
                 continue;
             }
@@ -191,17 +197,16 @@ fn find_next_to_try(board: &SudokuBoard) -> Option<[usize; 2]> {
 mod tests {
     use std::fs::OpenOptions;
     use std::io::{BufRead, BufReader};
-    use crate::sudoku_board::SudokuBoard;
+    use crate::sudoku_board::{DefaultBoard};
     use crate::sudoku_examples::{EASY_LITERALS, HARD_LITERALS, MEDIUM_LITERALS};
     use crate::sudoku_solver::{develop, generate_possibilities, solve, unique_candidates_lines};
 
     #[test]
-    fn util() {
-    }
+    fn util() {}
 
     #[test]
     fn develop_easy() {
-        for mut board in EASY_LITERALS.map(SudokuBoard::from_literal) {
+        for mut board in EASY_LITERALS.map(DefaultBoard::from_literal) {
             while develop(&mut board) {}
             assert!(board.is_full());
         }
@@ -209,7 +214,7 @@ mod tests {
 
     #[test]
     fn solve_easy() {
-        for board in EASY_LITERALS.map(SudokuBoard::from_literal) {
+        for board in EASY_LITERALS.map(DefaultBoard::from_literal) {
             let solved = solve(&board);
             assert!(solved.is_some());
             assert!(solved.unwrap().is_full());
@@ -218,7 +223,7 @@ mod tests {
 
     #[test]
     fn solve_medium() {
-        for board in MEDIUM_LITERALS.map(SudokuBoard::from_literal) {
+        for board in MEDIUM_LITERALS.map(DefaultBoard::from_literal) {
             let solved = solve(&board);
             assert!(solved.is_some());
             assert!(solved.unwrap().is_full());
@@ -227,7 +232,7 @@ mod tests {
 
     #[test]
     fn solve_hard() {
-        for board in HARD_LITERALS.map(SudokuBoard::from_literal) {
+        for board in HARD_LITERALS.map(DefaultBoard::from_literal) {
             let solved = solve(&board);
             println!("{:?}", solved);
             assert!(solved.is_some());
@@ -251,9 +256,9 @@ mod tests {
             "
         ];
 
-        for mut example in examples.map(SudokuBoard::from_literal){
+        for mut example in examples.map(DefaultBoard::from_literal) {
             let possibilities = generate_possibilities(&example);
-            let result = unique_candidates_lines::<true>(&mut example, &possibilities);
+            let result = unique_candidates_lines::<true, 9, 3>(&mut example, &possibilities);
             assert!(result);
         }
     }
@@ -270,8 +275,8 @@ mod tests {
             let line = line.unwrap();
             let v: Vec<String> = line.split(',').map(String::from).collect();
 
-            let input = SudokuBoard::from_literal(&v[0]);
-            let expected = SudokuBoard::from_literal(&v[1]);
+            let input = DefaultBoard::from_literal(&v[0]);
+            let expected = DefaultBoard::from_literal(&v[1]);
 
             let result = solve(&input);
 
