@@ -45,7 +45,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
         self.numbers[row][col]
     }
 
-    pub fn get_possibilities(&self, row: usize, col: usize) -> NumberOptions {
+    pub fn get_possible(&self, row: usize, col: usize) -> NumberOptions {
         !(self.rows[row] | self.cols[col] | self.blocks[row / BLOCK_SIZE][col / BLOCK_SIZE])
     }
 
@@ -117,7 +117,7 @@ mod tests {
 
         for row in 0..9_usize {
             for col in 0..9_usize {
-                assert!(board.get_possibilities(row, col).all())
+                assert!(board.get_possible(row, col).all())
             }
         }
     }
@@ -130,8 +130,8 @@ mod tests {
 
         for row in 0..9_usize {
             for col in 0..9_usize {
-                println!("{} {} {:?}", row, col, board.get_possibilities(row, col));
-                assert_eq!(row != 0 && col != 0 && !(row < 3 && col < 3), board.get_possibilities(row, col).has_number(1));
+                println!("{} {} {:?}", row, col, board.get_possible(row, col));
+                assert_eq!(row != 0 && col != 0 && !(row < 3 && col < 3), board.get_possible(row, col).has_number(1));
             }
         }
     }
@@ -144,7 +144,7 @@ mod tests {
 
         for row in 0..9_usize {
             for col in 0..9_usize {
-                assert!(board.get_possibilities(row, col).all())
+                assert!(board.get_possible(row, col).all())
             }
         }
     }
