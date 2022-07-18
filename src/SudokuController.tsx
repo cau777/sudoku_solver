@@ -7,35 +7,59 @@ type Props = {
     setLog: (log: string) => void;
 }
 
-type State = {
+export type Highlights = {
+    highlightRow: number | null;
+    highlightCol: number | null;
+    highlightBlock: [number, number] | null;
+}
+
+type State = Highlights & {
     board: Board;
-    highlight: [number, number] | null;
+}
+
+function defaultState(board: Board) {
+    return {
+        highlightBlock: null,
+        highlightCol: null,
+        highlightRow: null,
+        board
+    };
 }
 
 export const SudokuController: React.FC<Props> = (props) => {
-    let [state, setState] = useState<State>({board: Board.default(3), highlight: null});
+    let [state, setState] = useState<State>(defaultState(Board.default(3)));
     
     function changeBoard(board: Board) {
-        init().then(() => {
-            let result = find_errors(board.toLiteral(), board.blockSize);
-            setState(s => ({...s, highlight: JSON.parse(result)}));
-        })
-        setState(s => ({...s, board: board}));
+        setState(s => ({...s, board}));
+        check(board, false);
     }
     
-    function check() {
-        let board = state!.board;
-        if (!board.cells.every(o => o !== null)) {
-            props.setLog("Your solution is incomplete");
-            return;
-        }
-        
+    function check(board: Board, log: boolean) {
         init().then(() => {
+            find_errors(board.toLiteral(), board.blockSize);
             let result = JSON.parse(find_errors(board.toLiteral(), board.blockSize));
-            if (result)
-                props.setLog(`Your solution is wrong. See number at row ${result[0] + 1} column ${result[1] + 1}`);
-            else
-                props.setLog("Your solution is right");
+            if (result) {
+                switch (result.type) {
+                    case "row":
+                        if (log) props.setLog(`Your solution is wrong. See row ${result.value + 1}`);
+                        setState(s => ({...s, highlightRow: result.value, highlightCol: null, highlightBlock: null}));
+                        break;
+                    case "col":
+                        if (log) props.setLog(`Your solution is wrong. See column ${result.value + 1}`);
+                        setState(s => ({...s, highlightRow: null, highlightCol: result.value, highlightBlock: null}));
+                        break;
+                    case "block":
+                        if (log) props.setLog(`Your solution is wrong. See block ${result.value[0] + 1},${result.value[1] + 1}`);
+                        setState(s => ({...s, highlightRow: null, highlightCol: null, highlightBlock: result.value}));
+                        break;
+                    
+                }
+            } else if (board.cells.every(o => o !== null)) {
+                if (log) props.setLog("Your solution is right");
+                setState(s => ({...s, highlightRow: null, highlightCol: null, highlightBlock: null}));
+            } else {
+                if (log) props.setLog("Your solution is incomplete");
+            }
         })
     }
     
@@ -43,12 +67,13 @@ export const SudokuController: React.FC<Props> = (props) => {
         let start = Date.now();
         
         init().then(() => {
-            let result = solve(board.toLiteral(), board.blockSize, 0); // TODO: steps
-            if (result.length === 0) {
+            let result = JSON.parse(solve(board.toLiteral(), board.blockSize, 0));
+            if (result === null) {
                 props.setLog("Couldn't find solution");
             } else {
+                let solution = result.solution;
                 props.setLog(`Found solution in ${Date.now() - start}ms`);
-                let solved = Board.fromLiteral(result, board.blockSize);
+                let solved = Board.fromLiteral(solution, board.blockSize);
                 console.log("res", result);
                 setState(s => ({...s, board: solved}));
             }
@@ -56,7 +81,7 @@ export const SudokuController: React.FC<Props> = (props) => {
     }
     
     function clear() {
-        setState({board: Board.default(state!.board.blockSize), highlight: null});
+        setState(s => defaultState(Board.default(s.board.blockSize)));
     }
     
     function randomBoard(coverage: number) {
@@ -72,7 +97,8 @@ export const SudokuController: React.FC<Props> = (props) => {
     
     return (
         <div className={"sudoku-controller"}>
-            <SudokuBoard highlight={state.highlight} board={state.board} setBoard={changeBoard}></SudokuBoard>
+            <SudokuBoard board={state.board} setBoard={changeBoard} highlightRow={state.highlightRow}
+                         highlightCol={state.highlightCol} highlightBlock={state.highlightBlock}></SudokuBoard>
             <div className={"buttons"}>
                 <select defaultValue={3}
                         onChange={(e) => setState({
@@ -83,7 +109,7 @@ export const SudokuController: React.FC<Props> = (props) => {
                     <option value={3}>9x9</option>
                     <option value={4}>16x16</option>
                 </select>
-                <button onClick={check}>Check</button>
+                <button onClick={() => check(state.board, true)}>Check</button>
                 <button onClick={() => solveBoard(state.board)}>Solve</button>
                 <button onClick={clear}>Clear</button>
                 <div>

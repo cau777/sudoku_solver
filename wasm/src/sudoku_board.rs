@@ -7,10 +7,16 @@ pub type DefaultBoard = SudokuBoard<9, 3>;
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct SudokuBoard<const SIZE: usize, const BLOCK_SIZE: usize> {
-    numbers: Array2D<Option<u8>, SIZE>,
+    pub numbers: Array2D<Option<u8>, SIZE>,
     rows: [NumberOptions<SIZE>; SIZE],
     cols: [NumberOptions<SIZE>; SIZE],
     blocks: Array2D<NumberOptions<SIZE>, BLOCK_SIZE>,
+}
+
+pub enum BoardError {
+    RowError(usize),
+    ColError(usize),
+    BlockError(usize, usize),
 }
 
 impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
@@ -81,7 +87,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
         result
     }
 
-    pub fn from_literal_checked(literal: &str) -> Result<Self, [u8; 2]> {
+    pub fn from_literal_checked(literal: &str) -> Result<Self, BoardError> {
         let mut board = SudokuBoard::new();
 
         for (index, number) in literal
@@ -95,33 +101,21 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
             let row = index / SIZE;
             let col = index % SIZE;
 
-            if !board.get_possible(row, col).has_number(number) {
-                return Err([row as u8, col as u8]);
+            if board.rows[row].has_number(number) {
+                return Err(BoardError::RowError(row));
+            }
+            if board.cols[col].has_number(number) {
+                return Err(BoardError::ColError(col));
+            }
+
+            let block_row = row / BLOCK_SIZE;
+            let block_col = col / BLOCK_SIZE;
+            if board.blocks[block_row][block_col].has_number(number) {
+                return Err(BoardError::BlockError(block_row, block_col));
             }
 
             board.set_number(Some(number), row, col);
-        };
-
-        // let mut board = SudokuBoard::new();
-        // let mut board_index = 0;
-        //
-        // for c in literal.chars() {
-        //     let digit = c.to_digit(10);
-        //     if digit.is_some() {
-        //         let row = board_index / SIZE;
-        //         let col = board_index % SIZE;
-        //         let number = digit.unwrap() as u8;
-        //
-        //         if !board.get_possible(row, col).has_number(number) {
-        //             return Err([row as u8, col as u8]);
-        //         }
-        //
-        //         board.set_number(Some(number), row, col);
-        //         board_index += 1;
-        //     } else if c == '_' {
-        //         board_index += 1;
-        //     }
-        // }
+        }
 
         Ok(board)
     }

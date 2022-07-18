@@ -3,10 +3,10 @@ import {NumberCell} from "./NumberCell";
 import {ColRowCell} from "./ColRowCell";
 import {Board} from "./board";
 import {CellBase} from "./CellBase";
+import {Highlights} from "./SudokuController";
 
-type Props = {
+type Props = Highlights & {
     board: Board;
-    highlight: [number, number]|null;
     setBoard: (board: Board) => void;
 }
 
@@ -29,7 +29,7 @@ export const SudokuBoard: React.FC<Props> = (props) => {
     for (let s = 0; s < size; s++) {
         firstRow.push(
             <td key={s} className={" block-row-start " + (s % blockSize === 0 ? " block-col-start " : "")}>
-                <CellBase highlighted={props.highlight !== null && s === props.highlight[1]}>
+                <CellBase highlighted={s === props.highlightCol}>
                     <ColRowCell num={s + 1}></ColRowCell>
                 </CellBase>
             </td>
@@ -40,21 +40,26 @@ export const SudokuBoard: React.FC<Props> = (props) => {
     
     let index = 0;
     for (let r = 0; r < size; r++) {
+        let blockRow = Math.floor(r / blockSize);
+        
         let cells = [
             <td key={"row nums " + r} className={" block-col-start " +
                 (r % blockSize === 0 ? " block-row-start " : "")}>
-                <CellBase highlighted={props.highlight !== null && r === props.highlight[0]}>
+                <CellBase highlighted={props.highlightRow === r}>
                     <ColRowCell num={r + 1}></ColRowCell>
                 </CellBase>
             </td>
         ];
         
         for (let c = 0; c < size; c++) {
+            let blockCol = Math.floor(c / blockSize);
+            
             cells.push(
                 <td key={c} className={
                     (r % blockSize === 0 ? " block-row-start " : "") +
                     (c % blockSize === 0 ? " block-col-start " : "")}>
-                    <CellBase highlighted={props.highlight !== null && (r === props.highlight[0] || c === props.highlight[1])}>
+                    <CellBase highlighted={props.highlightRow === r || props.highlightCol === c ||
+                        (props.highlightBlock !== null && props.highlightBlock[0] === blockRow && props.highlightBlock[1] === blockCol)}>
                         <NumberCell index={2 + index++} num={board.get(r, c)}
                                     setNum={(value) => updateBoard(r, c, value)}></NumberCell>
                     </CellBase>

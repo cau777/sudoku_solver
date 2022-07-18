@@ -5,11 +5,13 @@ mod number_options;
 mod util;
 mod solve_report;
 
+use json::{array, JsonValue, object};
 use rand::Rng;
 use wasm_bindgen::prelude::*;
-use crate::sudoku_board::SudokuBoard;
+use crate::sudoku_board::{BoardError, SudokuBoard};
 use crate::sudoku_solver::SudokuSolver;
 
+#[cfg(wasm_alloc)]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
@@ -32,10 +34,28 @@ fn solve_with_size<const SIZE: usize, const BLOCK_SIZE: usize>(board_literal: &s
     let board = SudokuBoard::<SIZE, BLOCK_SIZE>::from_literal(board_literal);
     let mut solver = SudokuSolver::new(record_steps);
     let result = solver.solve(&board);
-    match result {
-        None => "".to_owned(),
-        Some(board) => board.to_literal(),
+    if result.is_none() {
+        return JsonValue::Null.dump();
     }
+
+    let solution = result.unwrap().to_literal();
+    let mut steps = JsonValue::new_array();
+
+    for step in solver.steps {
+        let array: Vec<Option<u8>> = step.numbers.iter().flatten().map(|o| o.clone()).collect();
+        steps.push(object! {
+            message: step.message,
+            highlightRow: step.highlight_row,
+            highlightCol: step.highlight_col,
+            highlightBlock: step.highlight_block.map(|[a, b]| array![a, b]),
+            numbers: array,
+        }).expect("Invalid Json object");
+    }
+
+    return object! {
+        solution: solution,
+        steps: steps
+    }.dump();
 }
 
 #[wasm_bindgen]
@@ -51,9 +71,13 @@ pub fn find_errors(board_literal: &str, block_size: usize) -> String {
 fn find_errors_with_size<const SIZE: usize, const BLOCK_SIZE: usize>(board_literal: &str) -> String {
     let result = SudokuBoard::<SIZE, BLOCK_SIZE>::from_literal_checked(board_literal);
     match result {
-        Ok(_) => "null".to_owned(),
-        Err(e) => format!("[{},{}]", e[0], e[1])
-    }
+        Ok(_) => JsonValue::Null,
+        Err(error) => match error {
+            BoardError::RowError(row) => object! {type: "row", value: row},
+            BoardError::ColError(col) => object! {type: "col", value: col},
+            BoardError::BlockError(row, col) => object! {type: "block", value: array![row, col]}
+        }
+    }.dump()
 }
 
 #[wasm_bindgen]

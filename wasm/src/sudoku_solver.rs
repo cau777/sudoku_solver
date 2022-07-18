@@ -10,7 +10,7 @@ type Possibilities<const SIZE: usize> = Array2D<NumberOptions<SIZE>, SIZE>;
 
 pub struct SudokuSolver<const SIZE: usize, const BLOCK_SIZE: usize> {
     record_steps: usize,
-    steps: Vec<ReportStep<SIZE>>,
+    pub steps: Vec<ReportStep<SIZE, BLOCK_SIZE>>,
 }
 
 impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> {
@@ -88,7 +88,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                         highlight_row: Some(row as u8),
                         highlight_col: Some(col as u8),
                         highlight_block: None,
-                        possibilities: Self::prepare_possibilities(&Self::generate_possibilities(&current)),
+                        numbers: current.numbers
                     });
                 }
             }
@@ -113,7 +113,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                             highlight_row: Some(row as u8),
                             highlight_col: Some(col as u8),
                             highlight_block: None,
-                            possibilities: Self::prepare_possibilities(possibilities),
+                            numbers: board.numbers
                         })
                     }
                     board.set_number(Some(value), row, col);
@@ -160,7 +160,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                                 highlight_row: if INVERT { None } else { Some(row as u8) },
                                 highlight_col: if INVERT { Some(col as u8) } else { None },
                                 highlight_block: None,
-                                possibilities: Self::prepare_possibilities(possibilities),
+                                numbers: board.numbers
                             });
                         }
                         board.set_number(Some(first), row, col);
@@ -212,7 +212,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                                         highlight_row: None,
                                         highlight_col: None,
                                         highlight_block: Some([block_row as u8, block_col as u8]),
-                                        possibilities: Self::prepare_possibilities(possibilities),
+                                        numbers: board.numbers
                                     });
                                 }
 
@@ -237,10 +237,6 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
         }
 
         result
-    }
-
-    fn prepare_possibilities(possibilities: &Possibilities<SIZE>) -> Vec<Vec<NumberOptions<SIZE>>> {
-        possibilities.map(|x| x.to_vec()).to_vec()
     }
 
     fn develop(&mut self, board: &mut SudokuBoard<SIZE, BLOCK_SIZE>) -> bool {
