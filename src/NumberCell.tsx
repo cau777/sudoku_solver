@@ -8,7 +8,7 @@ type Props = {
 
 const ignoredKeys = ["Tab", "Control", "Shift", "Alt", "CapsLock", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"];
 
-export const SudokuCell: React.FC<Props> = (props) => {
+export const NumberCell: React.FC<Props> = (props) => {
     function keyDown(e: React.KeyboardEvent<HTMLInputElement>) {
         let key = e.key;
         console.log(key);

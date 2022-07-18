@@ -1,14 +1,16 @@
 use std::collections::{LinkedList};
+use rand::Rng;
+use rand::rngs::ThreadRng;
 use crate::number_options::NumberOptions;
 use crate::solve_report::{ReportStep};
 use crate::sudoku_board::{SudokuBoard};
 use crate::util::Array2D;
 
-type Possibilities<const SIZE: usize> = Array2D<NumberOptions, SIZE>;
+type Possibilities<const SIZE: usize> = Array2D<NumberOptions<SIZE>, SIZE>;
 
 pub struct SudokuSolver<const SIZE: usize, const BLOCK_SIZE: usize> {
     record_steps: usize,
-    steps: Vec<ReportStep>,
+    steps: Vec<ReportStep<SIZE>>,
 }
 
 impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> {
@@ -21,6 +23,36 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
 
     fn should_add(&self) -> bool {
         self.steps.len() < self.record_steps
+    }
+
+    pub fn solve_random(&mut self, board: &SudokuBoard<SIZE, BLOCK_SIZE>, rand: &mut ThreadRng) -> Option<SudokuBoard<SIZE, BLOCK_SIZE>> {
+        let mut stack = LinkedList::<SudokuBoard<SIZE, BLOCK_SIZE>>::new();
+        stack.push_front(board.clone());
+
+        while !stack.is_empty() {
+            let mut current = stack.pop_front().unwrap();
+
+            while self.develop(&mut current) {}
+
+            if current.is_full() {
+                return Some(current);
+            }
+
+            let next = Self::find_random_to_try(&current, rand);
+            if next.is_none() {
+                continue;
+            }
+
+            let [row, col] = next.unwrap();
+            let possible = current.get_possible(row, col);
+            for possible in possible.as_vec() {
+                let mut board = current.clone();
+                board.set_number(Some(possible), row, col);
+                stack.push_front(board);
+            }
+        }
+
+        None
     }
 
     pub fn solve(&mut self, board: &SudokuBoard<SIZE, BLOCK_SIZE>) -> Option<SudokuBoard<SIZE, BLOCK_SIZE>> {
@@ -56,7 +88,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                         highlight_row: Some(row as u8),
                         highlight_col: Some(col as u8),
                         highlight_block: None,
-                        possibilities: Self::prepare_possibilities(&Self::generate_possibilities(&current))
+                        possibilities: Self::prepare_possibilities(&Self::generate_possibilities(&current)),
                     });
                 }
             }
@@ -66,7 +98,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
     }
 
     fn sole_candidates(&mut self, board: &mut SudokuBoard<SIZE, BLOCK_SIZE>,
-                       possibilities: &Array2D<NumberOptions, SIZE>) -> bool {
+                       possibilities: &Array2D<NumberOptions<SIZE>, SIZE>) -> bool {
         for row in 0..SIZE {
             for col in 0..SIZE {
                 if board.get_number(row, col).is_some() { continue; }
@@ -81,7 +113,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                             highlight_row: Some(row as u8),
                             highlight_col: Some(col as u8),
                             highlight_block: None,
-                            possibilities: Self::prepare_possibilities(possibilities)
+                            possibilities: Self::prepare_possibilities(possibilities),
                         })
                     }
                     board.set_number(Some(value), row, col);
@@ -128,7 +160,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                                 highlight_row: if INVERT { None } else { Some(row as u8) },
                                 highlight_col: if INVERT { Some(col as u8) } else { None },
                                 highlight_block: None,
-                                possibilities: Self::prepare_possibilities(possibilities)
+                                possibilities: Self::prepare_possibilities(possibilities),
                             });
                         }
                         board.set_number(Some(first), row, col);
@@ -180,7 +212,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                                         highlight_row: None,
                                         highlight_col: None,
                                         highlight_block: Some([block_row as u8, block_col as u8]),
-                                        possibilities: Self::prepare_possibilities(possibilities)
+                                        possibilities: Self::prepare_possibilities(possibilities),
                                     });
                                 }
 
@@ -207,7 +239,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
         result
     }
 
-    fn prepare_possibilities(possibilities: &Possibilities<SIZE>) -> Vec<Vec<NumberOptions>> {
+    fn prepare_possibilities(possibilities: &Possibilities<SIZE>) -> Vec<Vec<NumberOptions<SIZE>>> {
         possibilities.map(|x| x.to_vec()).to_vec()
     }
 
@@ -238,6 +270,35 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                     return None;
                 }
                 results[(count - 1) as usize] = Some([row, col]);
+            }
+        }
+
+        for x in results {
+            if x.is_some() {
+                return x;
+            }
+        }
+
+        None
+    }
+
+    fn find_random_to_try(board: &SudokuBoard<SIZE, BLOCK_SIZE>, rand: &mut ThreadRng) -> Option<[usize; 2]> {
+        let mut results: [Option<[usize; 2]>; SIZE] = [None; SIZE];
+
+        for row in 0..SIZE {
+            for col in 0..SIZE {
+                if board.get_number(row, col).is_some() {
+                    continue;
+                }
+
+                let count = board.get_possible(row, col).count();
+                if count == 0 {
+                    return None;
+                }
+
+                let index = (count - 1) as usize;
+                if results[index].is_some() && rand.gen_bool(0.4) { continue; }
+                results[index] = Some([row, col]);
             }
         }
 
@@ -337,7 +398,12 @@ mod tests {
 
         for line in reader.lines() {
             let line = line.unwrap();
-            let v: Vec<String> = line.split(',').map(String::from).collect();
+            let v: Vec<String> = line.split(',')
+                .map(|o| o.split("")
+                    .collect::<Vec<&str>>()
+                    .join(" ")
+                )
+                .map(String::from).collect();
 
             let input = DefaultBoard::from_literal(&v[0]);
             let expected = DefaultBoard::from_literal(&v[1]);

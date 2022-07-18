@@ -1,5 +1,66 @@
 body {
     color: #BBE1FA;
+    background-color: #11191c;
+}
+
+h1 {
+    text-align: center;
+    margin-top: 0;
+}
+
+button {
+    border-radius: 0.5rem;
+    color: inherit;
+    padding: 0.5rem 0.4rem;
+    background-color: #0F4C75;
+    border: solid 2px black;
+}
+
+button:hover {
+    cursor: pointer;
+}
+
+select {
+    border-radius: 0.5rem;
+    color: inherit;
+    padding: 0.5rem 0.4rem;
+    background-color: #0F4C75;
+    border: solid 2px black;
+}
+
+hr {
+    height: 1px;
+    background-color: #3282B8;
+    border: none;
+}
+
+@media (min-width: 600px) {
+    .main-container {
+        display: flex;
+        justify-content: center;
+    }
+}
+
+.buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 0.7rem 0;
+}
+
+.sudoku-controller {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    min-width: min-content;
+}
+
+.main-card {
+    padding: 1rem;
+    border-radius: 1rem;
+    background-color: #1B262C;
+    border: solid black 2px;
 }
 
 .sudoku-board {
@@ -14,30 +75,34 @@ body {
     padding: 0;
 }
 
-.sudoku-board td .border {
-    height: 2rem;
-    width: 2rem;
+.sudoku-board td .cell-base {
+    height: 2.5rem;
+    width: 2.5rem;
     border-right: solid 2px black;
     border-bottom: solid 2px black;
     background-color: #0F4C75;
 }
 
-.sudoku-board .block-row-start .border {
+.sudoku-board td .cell-base.highlighted {
+    background-color: #750f0f;
+}
+
+.sudoku-board .block-row-start .cell-base {
     margin-top: 0.7rem;
     border-top: solid 2px black;
 }
 
-.sudoku-board .block-col-start .border {
+.sudoku-board .block-col-start .cell-base {
     margin-left: 0.7rem;
     border-left: solid 2px black;
 }
 
 .cell-number {
     text-align: center;
-    line-height: 2rem;
+    line-height: 2.5rem;
 }
 
-.sudoku-board td.hidden .border {
+.sudoku-board td.hidden .cell-base {
     border: none;
     background: none;
 }

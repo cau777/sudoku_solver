@@ -9,31 +9,42 @@
 // }
 
 export class Board {
-    private size: number;
-    // [key: number]: number | null;
+    readonly size: number;
     
-    public constructor(private blockSize: number,
-                       private cells: (number | null)[]) {
+    public constructor(public blockSize: number,
+                       public cells: (number | null)[]) {
         this.size = blockSize * blockSize;
-        // cells.forEach((value, index) => this[index] = value);
     }
     
     public static default(blockSize: number) {
         return new Board(blockSize, new Array(blockSize * blockSize * blockSize * blockSize).fill(null))
     }
     
+    public static fromLiteral(literal: string, blockSize: number) {
+        let array = literal
+            .replace("\n", " ")
+            .split(" ")
+            .filter(o => o.length !== 0)
+            .map(o => Number.parseInt(o))
+            .map(o => Number.isNaN(o) ? null : o);
+        
+        return new Board(blockSize, array);
+    }
+    
     public get(row: number, col: number) {
-        // return this[row * this.size + col];
         return this.cells[row * this.size + col];
     }
     
     public set(row: number, col: number, value: number | null) {
-        // this[row * this.size + col] = value;
         this.cells[row * this.size + col] = value;
         return this;
     }
     
     public copy() {
         return new Board(this.blockSize, [...this.cells]);
+    }
+    
+    public toLiteral() {
+        return this.cells.reduce((acc, value) => acc + (value ?? "_") + " ", "");
     }
 }

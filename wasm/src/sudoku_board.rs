@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Formatter};
+use std::str::FromStr;
 use crate::number_options::{NumberOptions};
 use crate::util::Array2D;
 
@@ -7,9 +8,9 @@ pub type DefaultBoard = SudokuBoard<9, 3>;
 #[derive(Clone, Eq, PartialEq)]
 pub struct SudokuBoard<const SIZE: usize, const BLOCK_SIZE: usize> {
     numbers: Array2D<Option<u8>, SIZE>,
-    rows: [NumberOptions; SIZE],
-    cols: [NumberOptions; SIZE],
-    blocks: Array2D<NumberOptions, BLOCK_SIZE>,
+    rows: [NumberOptions<SIZE>; SIZE],
+    cols: [NumberOptions<SIZE>; SIZE],
+    blocks: Array2D<NumberOptions<SIZE>, BLOCK_SIZE>,
 }
 
 impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
@@ -45,25 +46,84 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
         self.numbers[row][col]
     }
 
-    pub fn get_possible(&self, row: usize, col: usize) -> NumberOptions {
+    pub fn get_possible(&self, row: usize, col: usize) -> NumberOptions<SIZE> {
         !(self.rows[row] | self.cols[col] | self.blocks[row / BLOCK_SIZE][col / BLOCK_SIZE])
     }
 
     pub fn from_literal(literal: &str) -> Self {
         let mut board = SudokuBoard::new();
-        let mut board_index = 0;
 
-        for c in literal.chars() {
-            let digit = c.to_digit(10);
-            if digit.is_some() {
-                board.set_number(Some(digit.unwrap() as u8), board_index / SIZE, board_index % SIZE);
-                board_index += 1;
-            } else if c == '_' {
-                board_index += 1;
-            }
-        }
+        literal
+            .replace('\n', &" ")
+            .split(" ")
+            .filter(|o| o.len() != 0)
+            .enumerate()
+            .for_each(|(index, o)| {
+                board.set_number(u8::from_str(o).ok(), index / SIZE, index % SIZE)
+            });
 
         board
+    }
+
+    pub fn to_literal(&self) -> String {
+        let mut result = String::new();
+        for row in &self.numbers {
+            for num in row {
+                if num.is_some() {
+                    result += &num.unwrap().to_string();
+                } else {
+                    result += "_";
+                }
+
+                result += " ";
+            }
+        }
+        result
+    }
+
+    pub fn from_literal_checked(literal: &str) -> Result<Self, [u8; 2]> {
+        let mut board = SudokuBoard::new();
+
+        for (index, number) in literal
+            .replace('\n', &" ")
+            .split(" ")
+            .filter(|o| o.len() != 0)
+            .map(|o| u8::from_str(o))
+            .enumerate()
+            .filter(|(_, o)| o.is_ok())
+            .map(|(index, o)| (index, o.unwrap())) {
+            let row = index / SIZE;
+            let col = index % SIZE;
+
+            if !board.get_possible(row, col).has_number(number) {
+                return Err([row as u8, col as u8]);
+            }
+
+            board.set_number(Some(number), row, col);
+        };
+
+        // let mut board = SudokuBoard::new();
+        // let mut board_index = 0;
+        //
+        // for c in literal.chars() {
+        //     let digit = c.to_digit(10);
+        //     if digit.is_some() {
+        //         let row = board_index / SIZE;
+        //         let col = board_index % SIZE;
+        //         let number = digit.unwrap() as u8;
+        //
+        //         if !board.get_possible(row, col).has_number(number) {
+        //             return Err([row as u8, col as u8]);
+        //         }
+        //
+        //         board.set_number(Some(number), row, col);
+        //         board_index += 1;
+        //     } else if c == '_' {
+        //         board_index += 1;
+        //     }
+        // }
+
+        Ok(board)
     }
 
     #[inline]

@@ -2,11 +2,13 @@ use std::fmt::{Debug, Formatter};
 use std::ops::{BitAnd, BitOr, BitOrAssign, Not};
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash)]
-pub struct NumberOptions {
+pub struct NumberOptions<const SIZE: usize> {
     data: u16,
 }
 
-impl NumberOptions {
+impl<const SIZE: usize> NumberOptions<SIZE> {
+    const U8SIZE: u8 = SIZE as u8;
+
     pub fn has_number(&self, num: u8) -> bool {
         (self.data >> (num - 1)) & 1 == 1
     }
@@ -19,22 +21,22 @@ impl NumberOptions {
         self.data &= !(1 << (num - 1));
     }
 
-    pub fn all(&self) -> bool {
-        self.data == 0b11_1111_1111
-    }
-
     pub fn empty(&self) -> bool { self.data == 0 }
+
+    pub fn all(&self) -> bool {
+        self.as_vec().len() == SIZE
+    }
 
     pub fn count(&self) -> u16 {
         let mut result = 0_u16;
-        for value in 0..9_u8 {
+        for value in 0..Self::U8SIZE {
             result += (self.data >> value) & 1;
         }
         result
     }
 
     pub fn first(&self) -> Option<u8> {
-        for i in 1..=9_u8 {
+        for i in 1..=Self::U8SIZE {
             if self.has_number(i) {
                 return Some(i);
             }
@@ -44,9 +46,9 @@ impl NumberOptions {
     }
 
     pub fn as_vec(&self) -> Vec<u8> {
-        let mut result = Vec::<u8>::with_capacity(9);
+        let mut result = Vec::<u8>::with_capacity(SIZE);
 
-        for i in 1..=9_u8 {
+        for i in 1..=Self::U8SIZE {
             if self.has_number(i) {
                 result.push(i)
             }
@@ -54,16 +56,16 @@ impl NumberOptions {
         result
     }
 
-    pub fn as_bool_array(&self) -> [bool; 9] {
-        let mut result = [false; 9];
-        for i in 0..9 {
+    pub fn as_bool_array(&self) -> [bool; SIZE] {
+        let mut result = [false; SIZE];
+        for i in 0..SIZE {
             result[i] = self.has_number(i as u8 + 1);
         }
         result
     }
 }
 
-impl Default for NumberOptions {
+impl<const SIZE: usize> Default for NumberOptions<SIZE> {
     fn default() -> Self {
         NumberOptions {
             data: 0
@@ -71,8 +73,8 @@ impl Default for NumberOptions {
     }
 }
 
-impl BitOr for NumberOptions {
-    type Output = NumberOptions;
+impl<const SIZE: usize> BitOr for NumberOptions<SIZE> {
+    type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
         NumberOptions {
@@ -81,14 +83,14 @@ impl BitOr for NumberOptions {
     }
 }
 
-impl BitOrAssign for NumberOptions {
+impl<const SIZE: usize> BitOrAssign for NumberOptions<SIZE> {
     fn bitor_assign(&mut self, rhs: Self) {
         self.data |= rhs.data;
     }
 }
 
-impl BitAnd for NumberOptions {
-    type Output = NumberOptions;
+impl<const SIZE: usize> BitAnd for NumberOptions<SIZE> {
+    type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
         NumberOptions {
@@ -97,8 +99,8 @@ impl BitAnd for NumberOptions {
     }
 }
 
-impl Not for NumberOptions {
-    type Output = NumberOptions;
+impl<const SIZE: usize> Not for NumberOptions<SIZE> {
+    type Output = Self;
 
     fn not(self) -> Self::Output {
         NumberOptions {
@@ -107,7 +109,7 @@ impl Not for NumberOptions {
     }
 }
 
-impl Debug for NumberOptions {
+impl<const SIZE: usize> Debug for NumberOptions<SIZE> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "[ ")?;
 
@@ -129,7 +131,7 @@ mod tests {
 
     #[test]
     fn util() {
-        let mut options = NumberOptions::default();
+        let mut options = NumberOptions::<9>::default();
         println!("{:?}", options);
 
         options.add_number(1);

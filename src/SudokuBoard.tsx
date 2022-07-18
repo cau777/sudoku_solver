@@ -1,32 +1,37 @@
-import React, {useState} from "react";
-import {SudokuCell} from "./SudokuCell";
-import {CellNumber} from "./CellNumber";
+import React from "react";
+import {NumberCell} from "./NumberCell";
+import {ColRowCell} from "./ColRowCell";
 import {Board} from "./board";
+import {CellBase} from "./CellBase";
 
 type Props = {
-    blockSize: number;
-    setNum: (row: number, col: number, num?: number) => void;
+    board: Board;
+    highlight: [number, number]|null;
+    setBoard: (board: Board) => void;
 }
 
 export const SudokuBoard: React.FC<Props> = (props) => {
-    let blockSize = props.blockSize;
-    let size = blockSize * blockSize;
+    let blockSize = props.board.blockSize;
+    let size = props.board.size;
+    let board = props.board;
     let rows = [];
     
-    let [state, setState] = useState<Board>(Board.default(blockSize));
+    function updateBoard(row: number, col: number, value: number | null) {
+        props.setBoard(board.copy().set(row, col, value));
+    }
     
     let firstRow = [
         <td key={"hidden"} className={"block-col-start block-row-start hidden"}>
-            <div className={"border"}></div>
+            <CellBase highlighted={false}></CellBase>
         </td>
     ];
     
     for (let s = 0; s < size; s++) {
         firstRow.push(
             <td key={s} className={" block-row-start " + (s % blockSize === 0 ? " block-col-start " : "")}>
-                <div className={"border"}>
-                    <CellNumber num={s + 1}></CellNumber>
-                </div>
+                <CellBase highlighted={props.highlight !== null && s === props.highlight[1]}>
+                    <ColRowCell num={s + 1}></ColRowCell>
+                </CellBase>
             </td>
         );
     }
@@ -38,9 +43,9 @@ export const SudokuBoard: React.FC<Props> = (props) => {
         let cells = [
             <td key={"row nums " + r} className={" block-col-start " +
                 (r % blockSize === 0 ? " block-row-start " : "")}>
-                <div className={"border"}>
-                    <CellNumber num={r + 1}></CellNumber>
-                </div>
+                <CellBase highlighted={props.highlight !== null && r === props.highlight[0]}>
+                    <ColRowCell num={r + 1}></ColRowCell>
+                </CellBase>
             </td>
         ];
         
@@ -49,10 +54,10 @@ export const SudokuBoard: React.FC<Props> = (props) => {
                 <td key={c} className={
                     (r % blockSize === 0 ? " block-row-start " : "") +
                     (c % blockSize === 0 ? " block-col-start " : "")}>
-                    <div className={"border"}>
-                        <SudokuCell index={2 + index++} num={state.get(r, c)}
-                                    setNum={(value) => setState(state.copy().set(r, c, value))}></SudokuCell>
-                    </div>
+                    <CellBase highlighted={props.highlight !== null && (r === props.highlight[0] || c === props.highlight[1])}>
+                        <NumberCell index={2 + index++} num={board.get(r, c)}
+                                    setNum={(value) => updateBoard(r, c, value)}></NumberCell>
+                    </CellBase>
                 </td>
             );
         }
