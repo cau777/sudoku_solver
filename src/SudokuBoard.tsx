@@ -1,13 +1,13 @@
 import React from "react";
 import {NumberCell} from "./NumberCell";
 import {ColRowCell} from "./ColRowCell";
-import {Board} from "./board";
+import {Board, Highlights} from "./board";
 import {CellBase} from "./CellBase";
-import {Highlights} from "./SudokuController";
 
 type Props = Highlights & {
     board: Board;
     setBoard: (board: Board) => void;
+    readonly: boolean;
 }
 
 export const SudokuBoard: React.FC<Props> = (props) => {
@@ -61,7 +61,7 @@ export const SudokuBoard: React.FC<Props> = (props) => {
                     <CellBase highlighted={props.highlightRow === r || props.highlightCol === c ||
                         (props.highlightBlock !== null && props.highlightBlock[0] === blockRow && props.highlightBlock[1] === blockCol)}>
                         <NumberCell index={2 + index++} num={board.get(r, c)}
-                                    setNum={(value) => updateBoard(r, c, value)}></NumberCell>
+                                    setNum={(value) => props.readonly || updateBoard(r, c, value)}></NumberCell>
                     </CellBase>
                 </td>
             );

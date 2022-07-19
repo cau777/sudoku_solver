@@ -1,27 +1,34 @@
 import React, {useState} from "react";
 import {SudokuBoard} from "./SudokuBoard";
-import {Board} from "./board";
+import {Board, Highlights} from "./board";
 import init, {find_errors, random_board, solve} from "wasm";
+import {AllNull} from "./util";
 
 type Props = {
     setLog: (log: string) => void;
 }
 
-export type Highlights = {
-    highlightRow: number | null;
-    highlightCol: number | null;
-    highlightBlock: [number, number] | null;
-}
-
-type State = Highlights & {
+type State = (Solution | AllNull<Solution>) & Highlights & {
     board: Board;
 }
 
-function defaultState(board: Board) {
+type Solution = {
+    steps: Step[];
+    currentStep: number;
+}
+
+type Step = Highlights & {
+    message: string;
+    literal: string;
+}
+
+function defaultState(board: Board): State {
     return {
         highlightBlock: null,
         highlightCol: null,
         highlightRow: null,
+        steps: null,
+        currentStep: null,
         board
     };
 }
@@ -63,21 +70,28 @@ export const SudokuController: React.FC<Props> = (props) => {
         })
     }
     
-    function solveBoard(board: Board) {
-        let start = Date.now();
-        
+    function solveBoard(board: Board, recordSteps: number) {
         init().then(() => {
-            let result = JSON.parse(solve(board.toLiteral(), board.blockSize, 0));
+            let result: Step[] | null = JSON.parse(solve(board.toLiteral(), board.blockSize, recordSteps));
             if (result === null) {
                 props.setLog("Couldn't find solution");
             } else {
-                let solution = result.solution;
-                props.setLog(`Found solution in ${Date.now() - start}ms`);
-                let solved = Board.fromLiteral(solution, board.blockSize);
                 console.log("res", result);
-                setState(s => ({...s, board: solved}));
+                setState(s => ({...s, currentStep: 0, steps: result!}));
+                changeCurrentStep(0, result);
             }
         })
+    }
+    
+    function hideSolution() {
+        setState(s => ({...s, currentStep: null, steps: null}));
+    }
+    
+    function changeCurrentStep(index: number, steps: Step[]) {
+        if (index < 0 || index >= steps.length) return;
+        
+        props.setLog(steps[index].message);
+        setState(s => ({...s, currentStep: index, steps}));
     }
     
     function clear() {
@@ -90,15 +104,20 @@ export const SudokuController: React.FC<Props> = (props) => {
             let blockSize = state!.board.blockSize;
             let result = random_board(coverage, blockSize);
             let board = Board.fromLiteral(result, blockSize);
+            hideSolution();
             setState(s => ({...s, board}));
-            props.setLog(`Generated random board in ${Date.now() - start}ms`)
+            props.setLog(`Generated random board in ${Date.now() - start}ms`);
         })
     }
     
+    let focus = state.steps !== null ? state.steps[state.currentStep] : state;
     return (
         <div className={"sudoku-controller"}>
-            <SudokuBoard board={state.board} setBoard={changeBoard} highlightRow={state.highlightRow}
-                         highlightCol={state.highlightCol} highlightBlock={state.highlightBlock}></SudokuBoard>
+            <SudokuBoard
+                board={state.steps !== null ? Board.fromLiteral(state.steps[state.currentStep].literal, state.board.blockSize) : state.board}
+                setBoard={changeBoard} highlightRow={focus.highlightRow}
+                highlightCol={focus.highlightCol} highlightBlock={focus.highlightBlock}
+                readonly={state.steps !== null}></SudokuBoard>
             <div className={"buttons"}>
                 <select defaultValue={3}
                         onChange={(e) => setState({
@@ -110,7 +129,6 @@ export const SudokuController: React.FC<Props> = (props) => {
                     <option value={4}>16x16</option>
                 </select>
                 <button onClick={() => check(state.board, true)}>Check</button>
-                <button onClick={() => solveBoard(state.board)}>Solve</button>
                 <button onClick={clear}>Clear</button>
                 <div>
                     <hr/>
@@ -119,6 +137,23 @@ export const SudokuController: React.FC<Props> = (props) => {
                 <button onClick={() => randomBoard(0.50)}>Random 50%</button>
                 <button onClick={() => randomBoard(0.25)}>Random 25%</button>
                 <button onClick={() => randomBoard(0.1)}>Random 10%</button>
+                <div>
+                    <hr/>
+                </div>
+                
+                {state.steps === null ?
+                    <>
+                        <button onClick={() => solveBoard(state.board, 0)}>Solve</button>
+                        <button onClick={() => solveBoard(state.board, 200)}>Solve step-by-step</button>
+                    </>
+                    :
+                    <>
+                        <button onClick={hideSolution}>Hide solution</button>
+                        <button disabled={state.currentStep <= 0} onClick={() => changeCurrentStep(state.currentStep! - 1, state.steps!)}>Prev step</button>
+                        <button disabled={state.currentStep >= state.steps!.length - 1} onClick={() => changeCurrentStep(state.currentStep! + 1, state.steps!)}>Next step</button>
+                    </>
+                }
+            
             </div>
         </div>
     )

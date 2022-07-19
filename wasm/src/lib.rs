@@ -5,6 +5,7 @@ mod number_options;
 mod util;
 mod solve_report;
 
+use instant::Instant;
 use json::{array, JsonValue, object};
 use rand::Rng;
 use wasm_bindgen::prelude::*;
@@ -33,29 +34,37 @@ pub fn solve(board_literal: &str, block_size: usize, record_steps: usize) -> Str
 fn solve_with_size<const SIZE: usize, const BLOCK_SIZE: usize>(board_literal: &str, record_steps: usize) -> String {
     let board = SudokuBoard::<SIZE, BLOCK_SIZE>::from_literal(board_literal);
     let mut solver = SudokuSolver::new(record_steps);
+    let start = Instant::now();
     let result = solver.solve(&board);
+    let elapsed = start.elapsed().as_micros();
+
     if result.is_none() {
         return JsonValue::Null.dump();
     }
 
-    let solution = result.unwrap().to_literal();
     let mut steps = JsonValue::new_array();
 
     for step in solver.steps {
-        let array: Vec<Option<u8>> = step.numbers.iter().flatten().map(|o| o.clone()).collect();
         steps.push(object! {
             message: step.message,
             highlightRow: step.highlight_row,
             highlightCol: step.highlight_col,
             highlightBlock: step.highlight_block.map(|[a, b]| array![a, b]),
-            numbers: array,
+            literal: step.literal,
         }).expect("Invalid Json object");
     }
 
-    return object! {
-        solution: solution,
-        steps: steps
-    }.dump();
+    let solution = result.unwrap().to_literal();
+    let solution_message = format!("Found solution in {elapsed}μs");
+    steps.push(object! {
+        message: solution_message,
+        highlightRow: JsonValue::Null,
+        highlightCol: JsonValue::Null,
+        highlightBlock: JsonValue::Null,
+        literal: solution
+    }).expect("Invalid Json object");
+
+    steps.dump()
 }
 
 #[wasm_bindgen]

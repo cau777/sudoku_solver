@@ -16,6 +16,10 @@ button {
     border: solid 2px black;
 }
 
+button[disabled] {
+    background-color: #2f5e9b;
+}
+
 button:hover {
     cursor: pointer;
 }
@@ -46,6 +50,7 @@ hr {
     flex-direction: column;
     gap: 0.3rem;
     margin: 0.7rem 0;
+    min-width: 8rem;
 }
 
 .sudoku-controller {

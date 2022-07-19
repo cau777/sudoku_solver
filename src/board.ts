@@ -48,3 +48,9 @@ export class Board {
         return this.cells.reduce((acc, value) => acc + (value ?? "_") + " ", "");
     }
 }
+
+export type Highlights = {
+    highlightRow: number | null;
+    highlightCol: number | null;
+    highlightBlock: [number, number] | null;
+}

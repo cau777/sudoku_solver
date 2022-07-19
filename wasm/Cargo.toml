@@ -14,6 +14,7 @@ getrandom = { version = "0.2.7", features = ["js"] }
 rand = "0.8.5"
 wee_alloc = "0.4.5"
 json = "0.12.4"
+instant =  { version = "0.1.12", features = [ "wasm-bindgen" ] }
 
 [dev-dependencies]
 criterion = "0.3.6"

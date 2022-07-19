@@ -22,6 +22,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "build:wasm:dev": "cd wasm && wasm-pack build --target web --out-dir pkg --dev",
     "build:wasm": "cd wasm && wasm-pack build --target web --out-dir pkg --release -- --features wasm_alloc"
   },
   "eslintConfig": {

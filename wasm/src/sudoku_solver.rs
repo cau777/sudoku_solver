@@ -57,12 +57,17 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
 
     pub fn solve(&mut self, board: &SudokuBoard<SIZE, BLOCK_SIZE>) -> Option<SudokuBoard<SIZE, BLOCK_SIZE>> {
         let mut stack = LinkedList::<SudokuBoard<SIZE, BLOCK_SIZE>>::new();
+        let mut info_stack = LinkedList::<ReportStep<SIZE, BLOCK_SIZE>>::new();
         self.steps.clear();
 
         stack.push_front(board.clone());
 
         while !stack.is_empty() {
             let mut current = stack.pop_front().unwrap();
+
+            if self.should_add() && !info_stack.is_empty() {
+                self.steps.push(info_stack.pop_front().unwrap());
+            }
 
             while self.develop(&mut current) {}
 
@@ -71,27 +76,37 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
             }
 
             let next = Self::find_next_to_try(&current);
-            if next.is_none() {
-                continue;
-            }
+            if next.is_none() { continue; }
+
             let [row, col] = next.unwrap();
 
             let possible = current.get_possible(row, col);
             for possible in possible.as_vec() {
                 let mut board = current.clone();
                 board.set_number(Some(possible), row, col);
-                stack.push_front(board);
 
                 if self.should_add() {
-                    self.steps.push(ReportStep {
+                    info_stack.push_front(ReportStep {
                         message: format!("Tried value {} in {} {}", possible, row, col),
                         highlight_row: Some(row as u8),
                         highlight_col: Some(col as u8),
                         highlight_block: None,
-                        numbers: current.numbers
+                        literal: board.to_literal(),
                     });
                 }
+
+                stack.push_front(board);
             }
+        }
+
+        if self.should_add() {
+            self.steps.push(ReportStep {
+                message: "Gave up".to_owned(),
+                highlight_row: None,
+                highlight_col: None,
+                highlight_block: None,
+                literal: board.to_literal(),
+            });
         }
 
         None
@@ -107,16 +122,16 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                 if possible.count() == 1 {
                     let value = possible.first().unwrap();
 
+                    board.set_number(Some(value), row, col);
                     if self.should_add() {
                         self.steps.push(ReportStep {
-                            message: format!("Cell {} {} can only contain number {}", row, col, value),
+                            message: format!("Cell {} {} can only contain number {}", row + 1, col + 1, value),
                             highlight_row: Some(row as u8),
                             highlight_col: Some(col as u8),
                             highlight_block: None,
-                            numbers: board.numbers
+                            literal: board.to_literal(),
                         })
                     }
-                    board.set_number(Some(value), row, col);
                     return true;
                 }
             }
@@ -154,16 +169,16 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                     if board.get_number(row, col).is_some() { continue; }
 
                     if possibilities[row][col].has_number(first) {
+                        board.set_number(Some(first), row, col);
                         if self.should_add() {
                             self.steps.push(ReportStep {
-                                message: format!("Number {} can only be put in one place in {} {}", first, if INVERT { "col" } else { "row" }, i),
+                                message: format!("Number {} can only be put in one place in {} {}", first, if INVERT { "col" } else { "row" }, i + 1),
                                 highlight_row: if INVERT { None } else { Some(row as u8) },
                                 highlight_col: if INVERT { Some(col as u8) } else { None },
                                 highlight_block: None,
-                                numbers: board.numbers
+                                literal: board.to_literal(),
                             });
                         }
-                        board.set_number(Some(first), row, col);
                         return true;
                     }
                 }
@@ -206,17 +221,16 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                             if board.get_number(row, col).is_some() { continue; }
 
                             if possibilities[row][col].has_number(first) {
+                                board.set_number(Some(first), row, col);
                                 if self.should_add() {
                                     self.steps.push(ReportStep {
-                                        message: format!("Number {} can only be put in one block in {} {}", first, block_row, block_col),
+                                        message: format!("Number {} can only be put in one block in {} {}", first, block_row + 1, block_col + 1),
                                         highlight_row: None,
                                         highlight_col: None,
                                         highlight_block: Some([block_row as u8, block_col as u8]),
-                                        numbers: board.numbers
+                                        literal: board.to_literal(),
                                     });
                                 }
-
-                                board.set_number(Some(first), row, col);
                                 return true;
                             }
                         }
