@@ -23,8 +23,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "build:wasm:dev": "cd wasm && wasm-pack build --target web --out-dir pkg --dev",
-    "build:wasm": "cd wasm && wasm-pack build --target web --out-dir pkg --release -- --features wasm_alloc",
+    "build:wasm:dev": "cd wasm && npx wasm-pack build --target web --out-dir pkg --dev",
+    "build:wasm": "cd wasm && npx wasm-pack build --target web --out-dir pkg --release -- --features wasm_alloc",
     "gh-pages": "npm run build:wasm && npm run build"
   },
   "eslintConfig": {
@@ -44,5 +44,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "wasm-pack": "^0.10.3"
   }
 }
