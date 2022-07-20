@@ -26,6 +26,8 @@ harness = false
 [profile.release]
 lto = true
 opt-level = 3
+codegen-units = 1
+panic = "abort"
 
 [features]
 wasm_alloc = ["wee_alloc/default"]

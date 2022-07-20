@@ -87,7 +87,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
 
                 if self.should_add() {
                     info_stack.push_front(ReportStep {
-                        message: format!("Tried value {} in {} {}", possible, row, col),
+                        message: format!("Tried value {} in {},{}", possible, row, col),
                         highlight_row: Some(row as u8),
                         highlight_col: Some(col as u8),
                         highlight_block: None,

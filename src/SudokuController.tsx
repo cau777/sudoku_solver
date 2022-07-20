@@ -120,10 +120,7 @@ export const SudokuController: React.FC<Props> = (props) => {
                 readonly={state.steps !== null}></SudokuBoard>
             <div className={"buttons"}>
                 <select defaultValue={3}
-                        onChange={(e) => setState({
-                            ...state,
-                            board: Board.default(Number.parseInt(e.currentTarget.value))
-                        })}>
+                        onChange={(e) => setState(defaultState(Board.default(Number.parseInt(e.currentTarget.value))))}>
                     <option value={2}>4x4</option>
                     <option value={3}>9x9</option>
                     <option value={4}>16x16</option>
@@ -149,8 +146,12 @@ export const SudokuController: React.FC<Props> = (props) => {
                     :
                     <>
                         <button onClick={hideSolution}>Hide solution</button>
-                        <button disabled={state.currentStep <= 0} onClick={() => changeCurrentStep(state.currentStep! - 1, state.steps!)}>Prev step</button>
-                        <button disabled={state.currentStep >= state.steps!.length - 1} onClick={() => changeCurrentStep(state.currentStep! + 1, state.steps!)}>Next step</button>
+                        <button disabled={state.currentStep <= 0}
+                                onClick={() => changeCurrentStep(state.currentStep! - 1, state.steps!)}>Prev step
+                        </button>
+                        <button disabled={state.currentStep >= state.steps!.length - 1}
+                                onClick={() => changeCurrentStep(state.currentStep! + 1, state.steps!)}>Next step
+                        </button>
                     </>
                 }
             
