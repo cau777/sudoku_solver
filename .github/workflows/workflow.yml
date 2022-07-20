@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v1
 
       - name: Build WASM and page
-        run: npm install && npm run gh-build
+        run: npm install && npm run gh-pages
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@4.1.1

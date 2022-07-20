@@ -1,6 +1,6 @@
 # Sudoku Solver
 
-An algorithm made in rust to solve sudoku boards of various sizes efficiently. It's implemented in Rust and runs in the
+An algorithm made in rust to solve sudoku puzzles of various sizes efficiently. It's implemented in Rust and runs in the
 browser using Web Assembly. The project includes a modern interface made in React to visualise the algorithm
 step-by-step.
 
