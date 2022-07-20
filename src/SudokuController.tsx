@@ -61,12 +61,14 @@ export const SudokuController: React.FC<Props> = (props) => {
                         break;
                     
                 }
-            } else if (board.cells.every(o => o !== null)) {
-                if (log) props.setLog("Your solution is right");
-                setState(s => ({...s, highlightRow: null, highlightCol: null, highlightBlock: null}));
             } else {
-                if (log) props.setLog("Your solution is incomplete");
+                setState(s => ({...s, highlightRow: null, highlightCol: null, highlightBlock: null}));
+                if (log) {
+                    if (board.cells.every(o => o !== null)) props.setLog("Your solution is right");
+                    else props.setLog("Your solution is incomplete");
+                }
             }
+            
         })
     }
     
@@ -76,7 +78,6 @@ export const SudokuController: React.FC<Props> = (props) => {
             if (result === null) {
                 props.setLog("Couldn't find solution");
             } else {
-                console.log("res", result);
                 setState(s => ({...s, currentStep: 0, steps: result!}));
                 changeCurrentStep(0, result);
             }
@@ -111,11 +112,11 @@ export const SudokuController: React.FC<Props> = (props) => {
     }
     
     let focus = state.steps !== null ? state.steps[state.currentStep] : state;
+    let focusBoard =state.steps !== null ? Board.fromLiteral(state.steps[state.currentStep].literal, state.board.blockSize) : state.board;
+    
     return (
         <div className={"sudoku-controller"}>
-            <SudokuBoard
-                board={state.steps !== null ? Board.fromLiteral(state.steps[state.currentStep].literal, state.board.blockSize) : state.board}
-                setBoard={changeBoard} highlightRow={focus.highlightRow}
+            <SudokuBoard board={focusBoard} setBoard={changeBoard} highlightRow={focus.highlightRow}
                 highlightCol={focus.highlightCol} highlightBlock={focus.highlightBlock}
                 readonly={state.steps !== null}></SudokuBoard>
             <div className={"buttons"}>
@@ -125,7 +126,7 @@ export const SudokuController: React.FC<Props> = (props) => {
                     <option value={3}>9x9</option>
                     <option value={4}>16x16</option>
                 </select>
-                <button onClick={() => check(state.board, true)}>Check</button>
+                <button onClick={() => check(focusBoard, true)}>Check</button>
                 <button onClick={clear}>Clear</button>
                 <div>
                     <hr/>
