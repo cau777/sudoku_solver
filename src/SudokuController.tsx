@@ -91,7 +91,10 @@ export const SudokuController: React.FC<Props> = (props) => {
     function changeCurrentStep(index: number, steps: Step[]) {
         if (index < 0 || index >= steps.length) return;
         
-        props.setLog(steps[index].message);
+        if (steps.length !== 1)
+            props.setLog(`Step ${index + 1}: ${steps[index].message}`);
+        else
+            props.setLog(steps[index].message);
         setState(s => ({...s, currentStep: index, steps}));
     }
     
@@ -142,7 +145,7 @@ export const SudokuController: React.FC<Props> = (props) => {
                 {state.steps === null ?
                     <>
                         <button onClick={() => solveBoard(state.board, 0)}>Solve</button>
-                        <button onClick={() => solveBoard(state.board, 200)}>Solve step-by-step</button>
+                        <button onClick={() => solveBoard(state.board, 1000)}>Solve step-by-step</button>
                     </>
                     :
                     <>
@@ -150,8 +153,14 @@ export const SudokuController: React.FC<Props> = (props) => {
                         <button disabled={state.currentStep <= 0}
                                 onClick={() => changeCurrentStep(state.currentStep! - 1, state.steps!)}>Prev step
                         </button>
+                        <button disabled={state.currentStep <= 9}
+                                onClick={() => changeCurrentStep(state.currentStep! - 10, state.steps!)}>Prev 10 steps
+                        </button>
                         <button disabled={state.currentStep >= state.steps!.length - 1}
                                 onClick={() => changeCurrentStep(state.currentStep! + 1, state.steps!)}>Next step
+                        </button>
+                        <button disabled={state.currentStep >= state.steps!.length - 10}
+                                onClick={() => changeCurrentStep(state.currentStep! + 10, state.steps!)}>Next 10 steps
                         </button>
                     </>
                 }
