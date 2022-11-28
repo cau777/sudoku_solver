@@ -1,6 +1,7 @@
 use std::collections::{LinkedList};
 use rand::Rng;
 use rand::rngs::ThreadRng;
+use crate::Message;
 use crate::number_options::NumberOptions;
 use crate::solve_report::{ReportStep};
 use crate::sudoku_board::{SudokuBoard};
@@ -87,7 +88,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
 
                 if self.should_add() {
                     info_stack.push_front(ReportStep {
-                        message: format!("Tried value {} in {},{}", possible, row, col),
+                        message: Message::Tried(possible, row, col),
                         highlight_row: Some(row as u8),
                         highlight_col: Some(col as u8),
                         highlight_block: None,
@@ -101,7 +102,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
 
         if self.should_add() {
             self.steps.push(ReportStep {
-                message: "Gave up".to_owned(),
+                message: Message::GaveUp,
                 highlight_row: None,
                 highlight_col: None,
                 highlight_block: None,
@@ -125,7 +126,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                     board.set_number(Some(value), row, col);
                     if self.should_add() {
                         self.steps.push(ReportStep {
-                            message: format!("Cell {} {} can only contain number {}", row + 1, col + 1, value),
+                            message: Message::CanContainOnly(value, row + 1, col + 1),
                             highlight_row: Some(row as u8),
                             highlight_col: Some(col as u8),
                             highlight_block: None,
@@ -172,7 +173,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                         board.set_number(Some(first), row, col);
                         if self.should_add() {
                             self.steps.push(ReportStep {
-                                message: format!("Number {} can only be put in one place in {} {}", first, if INVERT { "col" } else { "row" }, i + 1),
+                                message: if INVERT { Message::NumberOnlyFitsInCol(first, i + 1) } else { Message::NumberOnlyFitsInRow(first, i + 1) },
                                 highlight_row: if INVERT { None } else { Some(row as u8) },
                                 highlight_col: if INVERT { Some(col as u8) } else { None },
                                 highlight_block: None,
@@ -224,7 +225,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                                 board.set_number(Some(first), row, col);
                                 if self.should_add() {
                                     self.steps.push(ReportStep {
-                                        message: format!("Number {} can only be put in one block in {} {}", first, block_row + 1, block_col + 1),
+                                        message: Message::NumberOnlyFitsInBlock(first, block_row + 1, block_col + 1),
                                         highlight_row: None,
                                         highlight_col: None,
                                         highlight_block: Some([block_row as u8, block_col as u8]),

@@ -3,6 +3,8 @@ import {SudokuBoard} from "./SudokuBoard";
 import {Board, Highlights} from "./board";
 import init, {find_errors, random_board, solve} from "wasm";
 import {AllNull} from "./util";
+import {useTranslation} from "react-i18next";
+import {Message} from "./Message";
 
 type Props = {
     setLog: (log: string) => void;
@@ -18,7 +20,7 @@ type Solution = {
 }
 
 type Step = Highlights & {
-    message: string;
+    message: Message;
     literal: string;
 }
 
@@ -35,6 +37,7 @@ function defaultState(board: Board): State {
 
 export const SudokuController: React.FC<Props> = (props) => {
     let [state, setState] = useState<State>(defaultState(Board.default(3)));
+    let {t} = useTranslation();
     
     function changeBoard(board: Board) {
         setState(s => ({...s, board}));
@@ -48,15 +51,18 @@ export const SudokuController: React.FC<Props> = (props) => {
             if (result) {
                 switch (result.type) {
                     case "row":
-                        if (log) props.setLog(`Your solution is wrong. See row ${result.value + 1}`);
+                        if (log)
+                            props.setLog(t("wrongSolutionRow", {row: result.value + 1}));
                         setState(s => ({...s, highlightRow: result.value, highlightCol: null, highlightBlock: null}));
                         break;
                     case "col":
-                        if (log) props.setLog(`Your solution is wrong. See column ${result.value + 1}`);
+                        if (log)
+                            props.setLog(t("wrongSolutionCol", {col: result.value + 1}));
                         setState(s => ({...s, highlightRow: null, highlightCol: result.value, highlightBlock: null}));
                         break;
                     case "block":
-                        if (log) props.setLog(`Your solution is wrong. See block ${result.value[0] + 1},${result.value[1] + 1}`);
+                        if (log)
+                            props.setLog(t("wrongSolutionBlock", {blockRow: result.value[0] + 1, blockCol: result.value[1] + 1}))
                         setState(s => ({...s, highlightRow: null, highlightCol: null, highlightBlock: result.value}));
                         break;
                     
@@ -64,8 +70,8 @@ export const SudokuController: React.FC<Props> = (props) => {
             } else {
                 setState(s => ({...s, highlightRow: null, highlightCol: null, highlightBlock: null}));
                 if (log) {
-                    if (board.cells.every(o => o !== null)) props.setLog("Your solution is right");
-                    else props.setLog("Your solution is incomplete");
+                    if (board.cells.every(o => o !== null)) props.setLog(t("rightSolution"));
+                    else props.setLog(t("incompleteSolution"));
                 }
             }
             
@@ -76,7 +82,7 @@ export const SudokuController: React.FC<Props> = (props) => {
         init().then(() => {
             let result: Step[] | null = JSON.parse(solve(board.toLiteral(), board.blockSize, recordSteps));
             if (result === null) {
-                props.setLog("Couldn't find solution");
+                props.setLog(t("noSolution"));
             } else {
                 setState(s => ({...s, currentStep: 0, steps: result!}));
                 changeCurrentStep(0, result);
@@ -90,11 +96,12 @@ export const SudokuController: React.FC<Props> = (props) => {
     
     function changeCurrentStep(index: number, steps: Step[]) {
         if (index < 0 || index >= steps.length) return;
+        let message = t(steps[index].message.t, {...steps[index].message});
         
         if (steps.length !== 1)
-            props.setLog(`Step ${index + 1}: ${steps[index].message}`);
+            props.setLog(t("step", {num: index+1, message}));
         else
-            props.setLog(steps[index].message);
+            props.setLog(message);
         setState(s => ({...s, currentStep: index, steps}));
     }
     
@@ -110,7 +117,7 @@ export const SudokuController: React.FC<Props> = (props) => {
             let board = Board.fromLiteral(result, blockSize);
             hideSolution();
             setState(s => ({...s, board}));
-            props.setLog(`Generated random board in ${Date.now() - start}ms`);
+            props.setLog(t("generatedRandom",{time: Date.now() - start}));
         })
     }
     
@@ -129,38 +136,42 @@ export const SudokuController: React.FC<Props> = (props) => {
                     <option value={3}>9x9</option>
                     <option value={4}>16x16</option>
                 </select>
-                <button onClick={() => check(focusBoard, true)}>Check</button>
-                <button onClick={clear}>Clear</button>
+                <button onClick={() => check(focusBoard, true)}>{t("checkButton")}</button>
+                <button onClick={clear}>{t("clearButton")}</button>
                 <div>
                     <hr/>
                 </div>
-                <button onClick={() => randomBoard(0.75)}>Random 75%</button>
-                <button onClick={() => randomBoard(0.50)}>Random 50%</button>
-                <button onClick={() => randomBoard(0.25)}>Random 25%</button>
-                <button onClick={() => randomBoard(0.1)}>Random 10%</button>
+                <button onClick={() => randomBoard(0.75)}>{t("generateRandomButton", {perc: 75})}</button>
+                <button onClick={() => randomBoard(0.50)}>{t("generateRandomButton", {perc: 50})}</button>
+                <button onClick={() => randomBoard(0.25)}>{t("generateRandomButton", {perc: 25})}</button>
+                <button onClick={() => randomBoard(0.1)}>{t("generateRandomButton", {perc: 10})}</button>
                 <div>
                     <hr/>
                 </div>
                 
                 {state.steps === null ?
                     <>
-                        <button onClick={() => solveBoard(state.board, 0)}>Solve</button>
-                        <button onClick={() => solveBoard(state.board, 1000)}>Solve step-by-step</button>
+                        <button onClick={() => solveBoard(state.board, 0)}>{t("solveButton")}</button>
+                        <button onClick={() => solveBoard(state.board, 1000)}>{t("solveStepsButton")}</button>
                     </>
                     :
                     <>
-                        <button onClick={hideSolution}>Hide solution</button>
+                        <button onClick={hideSolution}>{t("hideSolutionButton")}</button>
                         <button disabled={state.currentStep <= 0}
-                                onClick={() => changeCurrentStep(state.currentStep! - 1, state.steps!)}>Prev step
+                                onClick={() => changeCurrentStep(state.currentStep! - 1, state.steps!)}>
+                            {t("prevStepButton")}
                         </button>
                         <button disabled={state.currentStep <= 9}
-                                onClick={() => changeCurrentStep(state.currentStep! - 10, state.steps!)}>Prev 10 steps
+                                onClick={() => changeCurrentStep(state.currentStep! - 10, state.steps!)}>
+                            {t("prev10StepsButton")}
                         </button>
                         <button disabled={state.currentStep >= state.steps!.length - 1}
-                                onClick={() => changeCurrentStep(state.currentStep! + 1, state.steps!)}>Next step
+                                onClick={() => changeCurrentStep(state.currentStep! + 1, state.steps!)}>
+                            {t("nextStepButton")}
                         </button>
                         <button disabled={state.currentStep >= state.steps!.length - 10}
-                                onClick={() => changeCurrentStep(state.currentStep! + 10, state.steps!)}>Next 10 steps
+                                onClick={() => changeCurrentStep(state.currentStep! + 10, state.steps!)}>
+                            {t("next10StepsButton")}
                         </button>
                     </>
                 }

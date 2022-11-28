@@ -9,6 +9,7 @@ use instant::Instant;
 use json::{array, JsonValue, object};
 use rand::Rng;
 use wasm_bindgen::prelude::*;
+use crate::solve_report::Message;
 use crate::sudoku_board::{BoardError, SudokuBoard};
 use crate::sudoku_solver::SudokuSolver;
 
@@ -46,7 +47,7 @@ fn solve_with_size<const SIZE: usize, const BLOCK_SIZE: usize>(board_literal: &s
 
     for step in solver.steps {
         steps.push(object! {
-            message: step.message,
+            message: step.message.to_object(),
             highlightRow: step.highlight_row,
             highlightCol: step.highlight_col,
             highlightBlock: step.highlight_block.map(|[a, b]| array![a, b]),
@@ -55,9 +56,8 @@ fn solve_with_size<const SIZE: usize, const BLOCK_SIZE: usize>(board_literal: &s
     }
 
     let solution = result.unwrap().to_literal();
-    let solution_message = format!("Found solution in {elapsed}μs");
     steps.push(object! {
-        message: solution_message,
+        message: Message::Found(elapsed as u64).to_object(),
         highlightRow: JsonValue::Null,
         highlightCol: JsonValue::Null,
         highlightBlock: JsonValue::Null,
