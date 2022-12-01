@@ -2,6 +2,8 @@ import i18next from "i18next";
 import {initReactI18next} from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 
+i18next.on("languageChanged", (lng) => document.documentElement.setAttribute("lang", lng));
+
 i18next
     .use(initReactI18next)
     .use(LanguageDetector)
