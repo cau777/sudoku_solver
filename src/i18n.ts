@@ -67,9 +67,9 @@ i18next
                     tried: "Tentar número {{num}} em {{row}},{{col}}",
                     gaveUp: "Desistir",
                     canContainOnly: "Casa {{row}},{{col}} apenas pode conter o número {{num}}",
-                    numberOnlyFitsInRow: "O número {{num}} apenas pode ser colocado em uma cada na linha {{row}}",
-                    numberOnlyFitsInCol: "O número {{num}} apenas pode ser colocado em uma cada na coluna {{col}}",
-                    numberOnlyFitsInBlock: "O número {{num}} apenas pode ser colocado em uma cada no bloco {{row}},{{col}}",
+                    numberOnlyFitsInRow: "O número {{num}} apenas pode ser colocado em uma casa na linha {{row}}",
+                    numberOnlyFitsInCol: "O número {{num}} apenas pode ser colocado em uma casa na coluna {{col}}",
+                    numberOnlyFitsInBlock: "O número {{num}} apenas pode ser colocado em uma casa no bloco {{row}},{{col}}",
                 }
             }
         }
