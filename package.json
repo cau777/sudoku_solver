@@ -28,7 +28,7 @@
     "eject": "react-scripts eject",
     "build:wasm:dev": "cd wasm && npx wasm-pack build --target web --out-dir pkg --dev",
     "build:wasm": "cd wasm && npx wasm-pack build --target web --out-dir pkg --release -- --features wasm_alloc",
-    "gh-pages": "npm run build:wasm && npm run build"
+    "build:docker": "npm run build:wasm && npm run build"
   },
   "eslintConfig": {
     "extends": [
