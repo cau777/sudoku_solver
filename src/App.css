@@ -128,3 +128,8 @@ hr {
     outline: solid #4b9fd5 2px;
     background-color: #1F78B4;
 }
+
+.subtitle {
+    text-align: center;
+    font-weight: 500;
+}

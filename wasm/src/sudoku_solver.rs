@@ -9,6 +9,8 @@ use crate::util::Array2D;
 
 type Possibilities<const SIZE: usize> = Array2D<NumberOptions<SIZE>, SIZE>;
 
+/// Main struct to solve boards
+/// Constant type parameters are used to increase performance and avoid heap allocations
 pub struct SudokuSolver<const SIZE: usize, const BLOCK_SIZE: usize> {
     record_steps: usize,
     pub steps: Vec<ReportStep<SIZE, BLOCK_SIZE>>,
@@ -22,7 +24,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
         }
     }
 
-    fn should_add(&self) -> bool {
+    fn should_report_step(&self) -> bool {
         self.steps.len() < self.record_steps
     }
 
@@ -66,27 +68,30 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
         while !stack.is_empty() {
             let mut current = stack.pop_front().unwrap();
 
-            if self.should_add() && !info_stack.is_empty() {
+            if self.should_report_step() && !info_stack.is_empty() {
                 self.steps.push(info_stack.pop_front().unwrap());
             }
 
+            // Fill as many known cells as possible to reduce the number of guesses
             while self.develop(&mut current) {}
 
+            // If the board is finished
             if current.is_full() {
                 return Some(current);
             }
 
             let next = Self::find_next_to_try(&current);
-            if next.is_none() { continue; }
 
+            if next.is_none() { continue; }
             let [row, col] = next.unwrap();
 
             let possible = current.get_possible(row, col);
+            // Add to the stack all variations of the board regarding that cell
             for possible in possible.as_vec() {
                 let mut board = current.clone();
                 board.set_number(Some(possible), row, col);
 
-                if self.should_add() {
+                if self.should_report_step() {
                     info_stack.push_front(ReportStep {
                         message: Message::Tried(possible, row, col),
                         highlight_row: Some(row as u8),
@@ -100,7 +105,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
             }
         }
 
-        if self.should_add() {
+        if self.should_report_step() {
             self.steps.push(ReportStep {
                 message: Message::GaveUp,
                 highlight_row: None,
@@ -113,10 +118,14 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
         None
     }
 
+    /// Search for a cell that can only contain one number, because all the other ones are already
+    /// taken in the row/column/block.
+    /// Return whether a cell meeting the condition was found.
     fn sole_candidates(&mut self, board: &mut SudokuBoard<SIZE, BLOCK_SIZE>,
                        possibilities: &Array2D<NumberOptions<SIZE>, SIZE>) -> bool {
         for row in 0..SIZE {
             for col in 0..SIZE {
+                // Skip cells with known numbers
                 if board.get_number(row, col).is_some() { continue; }
 
                 let possible = possibilities[row][col];
@@ -124,7 +133,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
                     let value = possible.first().unwrap();
 
                     board.set_number(Some(value), row, col);
-                    if self.should_add() {
+                    if self.should_report_step() {
                         self.steps.push(ReportStep {
                             message: Message::CanContainOnly(value, row + 1, col + 1),
                             highlight_row: Some(row as u8),
@@ -141,6 +150,9 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
         false
     }
 
+    /// Search for a situation where, in a row/column, a number can only be put in one cell.
+    /// The type parameter makes the code search on columns instead of rows.
+    /// Return whether a cell meeting the condition was found.
     fn unique_candidates_lines<const INVERT: bool>(&mut self,
                                                    board: &mut SudokuBoard<SIZE, BLOCK_SIZE>,
                                                    possibilities: &Possibilities<SIZE>) -> bool {
@@ -171,7 +183,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
 
                     if possibilities[row][col].has_number(first) {
                         board.set_number(Some(first), row, col);
-                        if self.should_add() {
+                        if self.should_report_step() {
                             self.steps.push(ReportStep {
                                 message: if INVERT { Message::NumberOnlyFitsInCol(first, i + 1) } else { Message::NumberOnlyFitsInRow(first, i + 1) },
                                 highlight_row: if INVERT { None } else { Some(row as u8) },
@@ -188,6 +200,8 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
         false
     }
 
+    /// Search for a situation where, in a block, a number can only be put in one cell.
+    /// Return whether a cell meeting the condition was found.
     fn unique_candidates_blocks(&mut self, board: &mut SudokuBoard<SIZE, BLOCK_SIZE>, possibilities: &Possibilities<SIZE>) -> bool {
         for block_row in 0..BLOCK_SIZE {
             for block_col in 0..BLOCK_SIZE {
@@ -223,7 +237,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
 
                             if possibilities[row][col].has_number(first) {
                                 board.set_number(Some(first), row, col);
-                                if self.should_add() {
+                                if self.should_report_step() {
                                     self.steps.push(ReportStep {
                                         message: Message::NumberOnlyFitsInBlock(first, block_row + 1, block_col + 1),
                                         highlight_row: None,
@@ -242,6 +256,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
         false
     }
 
+    /// Return a nested array of all the values that can be put in each cell
     fn generate_possibilities(board: &SudokuBoard<SIZE, BLOCK_SIZE>) -> Possibilities<SIZE> {
         let mut result = [[NumberOptions::default(); SIZE]; SIZE];
 
@@ -254,8 +269,10 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
         result
     }
 
+    /// Fill a cell whose value can be known for certain. Return whether it was able to find
+    /// a cell that met this condition
     fn develop(&mut self, board: &mut SudokuBoard<SIZE, BLOCK_SIZE>) -> bool {
-        let possibilities = Self::generate_possibilities(&board);
+        let possibilities = Self::generate_possibilities(board);
         if self.sole_candidates(board, &possibilities)
             || self.unique_candidates_lines::<false>(board, &possibilities)
             || self.unique_candidates_lines::<true>(board, &possibilities)
@@ -267,6 +284,8 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
         false
     }
 
+    /// Get a the cell with the least number of possibilities to try next. If multiple cells
+    /// have the same number of possibilities, it returns the last one.
     fn find_next_to_try(board: &SudokuBoard<SIZE, BLOCK_SIZE>) -> Option<[usize; 2]> {
         let mut results: [Option<[usize; 2]>; SIZE] = [None; SIZE];
 
@@ -293,6 +312,9 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuSolver<SIZE, BLOCK_SIZE> 
         None
     }
 
+    /// Get a the cell with the least number of possibilities to try next. If multiple cells
+    /// have the same number of possibilities, it returns a random one.
+    /// Only used for random board generation.
     fn find_random_to_try(board: &SudokuBoard<SIZE, BLOCK_SIZE>, rand: &mut ThreadRng) -> Option<[usize; 2]> {
         let mut results: [Option<[usize; 2]>; SIZE] = [None; SIZE];
 

@@ -1,3 +1,4 @@
+// All the observations that the Wasm code can make about a cell
 export type Message =
     { t: "found", ms: number } |
     { t: "tried", num: number, row: number, col: number } |

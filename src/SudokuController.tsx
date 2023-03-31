@@ -96,11 +96,14 @@ export const SudokuController: React.FC<Props> = (props) => {
     
     function changeCurrentStep(index: number, steps: Step[]) {
         if (index < 0 || index >= steps.length) return;
+        // Translates the message using its key and other values as params
         let message = t(steps[index].message.t, {...steps[index].message});
         
         if (steps.length !== 1)
+            // If there are multiple messages, display the step number and then the message
             props.setLog(t("step", {num: index+1, message}));
         else
+            // If there's only one message, just display it
             props.setLog(message);
         setState(s => ({...s, currentStep: index, steps}));
     }
@@ -141,6 +144,7 @@ export const SudokuController: React.FC<Props> = (props) => {
                 <div>
                     <hr/>
                 </div>
+                <div className={"subtitle"}>{t("generate")}</div>
                 <button onClick={() => randomBoard(0.75)}>{t("generateRandomButton", {perc: 75})}</button>
                 <button onClick={() => randomBoard(0.50)}>{t("generateRandomButton", {perc: 50})}</button>
                 <button onClick={() => randomBoard(0.25)}>{t("generateRandomButton", {perc: 25})}</button>
@@ -148,6 +152,7 @@ export const SudokuController: React.FC<Props> = (props) => {
                 <div>
                     <hr/>
                 </div>
+                <div className={"subtitle"}>{t("solve")}</div>
                 
                 {state.steps === null ?
                     <>

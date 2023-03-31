@@ -12,6 +12,7 @@ function App() {
     let {t} = useTranslation();
     
     useEffect(() => {
+        // Translate the window title when the translation is loaded
         document.title = t("title");
     }, [t])
     

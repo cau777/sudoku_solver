@@ -11,7 +11,7 @@ pub enum Message {
 }
 
 impl Message {
-    pub fn to_object(self) -> JsonValue {
+    pub fn into_object(self) -> JsonValue {
         use Message::*;
         match self {
             Found(ms) => object! {

@@ -47,7 +47,7 @@ fn solve_with_size<const SIZE: usize, const BLOCK_SIZE: usize>(board_literal: &s
 
     for step in solver.steps {
         steps.push(object! {
-            message: step.message.to_object(),
+            message: step.message.into_object(),
             highlightRow: step.highlight_row,
             highlightCol: step.highlight_col,
             highlightBlock: step.highlight_block.map(|[a, b]| array![a, b]),
@@ -57,7 +57,7 @@ fn solve_with_size<const SIZE: usize, const BLOCK_SIZE: usize>(board_literal: &s
 
     let solution = result.unwrap().to_literal();
     steps.push(object! {
-        message: Message::Found(elapsed as u64).to_object(),
+        message: Message::Found(elapsed as u64).into_object(),
         highlightRow: JsonValue::Null,
         highlightCol: JsonValue::Null,
         highlightBlock: JsonValue::Null,

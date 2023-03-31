@@ -5,6 +5,8 @@ use crate::util::Array2D;
 
 pub type DefaultBoard = SudokuBoard<9, 3>;
 
+/// Struct that keeps track of the numbers in the board and also what values are already used
+/// in each row/column/block
 #[derive(Clone, Eq, PartialEq)]
 pub struct SudokuBoard<const SIZE: usize, const BLOCK_SIZE: usize> {
     pub numbers: Array2D<Option<u8>, SIZE>,
@@ -31,16 +33,14 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
 
     pub fn set_number(&mut self, value: Option<u8>, row: usize, col: usize) {
         let prev = self.numbers[row][col];
-        if prev.is_some() {
-            let val = prev.unwrap();
+        if let Some(val) = prev {
             self.rows[row].remove_number(val);
             self.cols[col].remove_number(val);
             self.blocks[row / BLOCK_SIZE][col / BLOCK_SIZE].remove_number(val);
             self.numbers[row][col] = None;
         }
 
-        if value.is_some() {
-            let val = value.unwrap();
+        if let Some(val) = value {
             self.rows[row].add_number(val);
             self.cols[col].add_number(val);
             self.blocks[row / BLOCK_SIZE][col / BLOCK_SIZE].add_number(val);
@@ -60,9 +60,9 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
         let mut board = SudokuBoard::new();
 
         literal
-            .replace('\n', &" ")
-            .split(" ")
-            .filter(|o| o.len() != 0)
+            .replace('\n', " ")
+            .split(' ')
+            .filter(|o| !o.is_empty())
             .enumerate()
             .for_each(|(index, o)| {
                 board.set_number(u8::from_str(o).ok(), index / SIZE, index % SIZE)
@@ -71,6 +71,8 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
         board
     }
 
+    /// Return a more compact representation of the board, in the format "1 2 3 _ _ 6 7 8 _"
+    /// without newlines
     pub fn to_literal(&self) -> String {
         let mut result = String::new();
         for row in &self.numbers {
@@ -91,10 +93,10 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
         let mut board = SudokuBoard::new();
 
         for (index, number) in literal
-            .replace('\n', &" ")
-            .split(" ")
-            .filter(|o| o.len() != 0)
-            .map(|o| u8::from_str(o))
+            .replace('\n', " ")
+            .split(' ')
+            .filter(|o| !o.is_empty())
+            .map(u8::from_str)
             .enumerate()
             .filter(|(_, o)| o.is_ok())
             .map(|(index, o)| (index, o.unwrap())) {
@@ -132,6 +134,7 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
         true
     }
 
+    /// Returns a readable representation of the board
     pub fn board_to_string(&self) -> String {
         let mut result = String::new();
         result += "  ---------------------\n";
@@ -139,7 +142,11 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> SudokuBoard<SIZE, BLOCK_SIZE> {
         for row in 0..SIZE {
             result += &format!("{} | ", row);
             for col in 0..SIZE {
-                result += &(self.numbers[row][col].map(|x| x.to_string()).unwrap_or("_".to_owned()).to_string() + " ");
+                match self.numbers[row][col] {
+                    Some(x) => result += &x.to_string(),
+                    None => result += "_",
+                }
+                result += " ";
             }
             result += "|\n";
         }
@@ -159,11 +166,6 @@ impl<const SIZE: usize, const BLOCK_SIZE: usize> Debug for SudokuBoard<SIZE, BLO
 #[cfg(test)]
 mod tests {
     use crate::sudoku_board::{DefaultBoard};
-
-    #[test]
-    fn util() {
-        assert!(true);
-    }
 
     #[test]
     fn empty_board() {

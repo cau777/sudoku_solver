@@ -27,6 +27,7 @@ export const SudokuBoard: React.FC<Props> = (props) => {
     ];
     
     for (let s = 0; s < size; s++) {
+        // Column number indicator
         firstRow.push(
             <td key={s} className={" block-row-start " + (s % blockSize === 0 ? " block-col-start " : "")}>
                 <CellBase highlighted={s === props.highlightCol}>
@@ -43,6 +44,7 @@ export const SudokuBoard: React.FC<Props> = (props) => {
         let blockRow = Math.floor(r / blockSize);
         
         let cells = [
+            // Row number indicator
             <td key={"row nums " + r} className={" block-col-start " +
                 (r % blockSize === 0 ? " block-row-start " : "")}>
                 <CellBase highlighted={props.highlightRow === r}>

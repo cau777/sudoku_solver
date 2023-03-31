@@ -1,12 +1,3 @@
-// export type Board = (number | null)[];
-//
-// export function defaultBoard(size: number) {
-//     return new Array(size).fill(null);
-// }
-//
-// export function setCell(board: Board, row: number, col: number, size: number, value: number | undefined) {
-//     board[row + "-" + col] =
-// }
 
 export class Board {
     readonly size: number;
@@ -16,10 +7,13 @@ export class Board {
         this.size = blockSize * blockSize;
     }
     
+    // Create an empty board
     public static default(blockSize: number) {
         return new Board(blockSize, new Array(blockSize * blockSize * blockSize * blockSize).fill(null))
     }
     
+    // A literal a continuous string representation of the board, in the format "1 2 3 _ _ 6 7 8 _"
+    // that can contain new lines
     public static fromLiteral(literal: string, blockSize: number) {
         let array = literal
             .replace("\n", " ")
@@ -40,10 +34,12 @@ export class Board {
         return this;
     }
     
+    // Deep copy of the object
     public copy() {
         return new Board(this.blockSize, [...this.cells]);
     }
     
+    // Converts the board to the format "1 2 3 _ _ 6 7 8 _"
     public toLiteral() {
         return this.cells.reduce((acc, value) => acc + (value ?? "_") + " ", "");
     }
