@@ -1,9 +1,8 @@
-FROM rust:1.68.1-buster AS builder
+FROM rust:1.68.1 AS builder
 WORKDIR /home
 RUN apt update
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
 RUN apt install -y nodejs
-#RUN apt install -y npm
 
 COPY ./package.json .
 COPY ./tsconfig.json .
