@@ -25,10 +25,10 @@ http {  \
   include mime.types;  \
   sendfile on; \
   server {  \
-    listen 8080; \
+    listen 80; \
     resolver 127.0.0.11;  \
     autoindex off;  \
-    server_name caua-rinaldi.dev;  \
+    server_name sudoku.caua-rinaldi.dev;  \
     absolute_redirect off; \
     root /usr/share/nginx/html;  \
     server_tokens off;  \
@@ -40,4 +40,4 @@ http {  \
   } \
 }" > /etc/nginx/nginx.conf
 COPY --from=builder /home/build /usr/share/nginx/html
-EXPOSE 8080
+EXPOSE 80
