@@ -49,6 +49,6 @@
     ]
   },
   "devDependencies": {
-    "wasm-pack": "^0.10.3"
+    "wasm-pack": "^0.14.0"
   }
 }
